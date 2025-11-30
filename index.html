@@ -250,7 +250,7 @@
                     <label class="form-label small">Разделение данных:</label>
                     <div class="input-group input-group-sm">
                         <span class="input-group-text">Обучающая</span>
-                        <input type="number" class="form-control" value="80" min="0" max="100">
+                        <input type="number" class="form-control" x-model="trainingSplit" min="0" max="100">
                         <span class="input-group-text">%</span>
                     </div>
                 </div>
@@ -406,7 +406,8 @@
                     layers: [],
                     status: 'Не обучена',
                     data: [],
-                    network: null
+                    network: null,
+                    normalization: {}
                 },
                 selectedLayer: null,
                 draggedLayer: null,
@@ -425,6 +426,8 @@
                 testInputs: {},
                 testResult: null,
                 exportedCode: '',
+                trainingSplit: 80,
+                trainingInterval: null,
                 
                 init() {
                     this.updateTestInputs();
@@ -437,11 +440,13 @@
                         layers: [],
                         status: 'Не обучена',
                         data: [],
-                        network: null
+                        network: null,
+                        normalization: {}
                     };
                     this.selectedLayer = null;
                     this.testInputs = {};
                     this.testResult = null;
+                    this.trainingStats.errorHistory = [];
                     alert('Создан новый проект');
                 },
                 
@@ -538,7 +543,9 @@
                         const values = line.split(',').map(v => v.trim());
                         const row = {};
                         headers.forEach((header, index) => {
-                            row[header] = isNaN(values[index]) ? values[index] : parseFloat(values[index]);
+                            // Улучшенный парсинг чисел
+                            const value = values[index];
+                            row[header] = isNaN(value) || value === '' ? value : parseFloat(value);
                         });
                         return row;
                     });
@@ -546,10 +553,12 @@
                 
                 updateColumnType(columnName, type) {
                     console.log(`Column ${columnName} set to ${type}`);
+                    // В реальном приложении здесь бы сохранялась информация о типах столбцов
                 },
                 
                 preprocessData() {
                     if (this.project.data.length > 0) {
+                        this.project.normalization = {};
                         const numericColumns = Object.keys(this.project.data[0]).filter(key => 
                             typeof this.project.data[0][key] === 'number'
                         );
@@ -558,6 +567,8 @@
                             const values = this.project.data.map(row => row[column]);
                             const min = Math.min(...values);
                             const max = Math.max(...values);
+                            
+                            this.project.normalization[column] = { min, max };
                             
                             if (max !== min) {
                                 this.project.data.forEach(row => {
@@ -583,6 +594,7 @@
                     
                     this.isTraining = true;
                     this.project.status = 'Обучается';
+                    this.trainingStats.errorHistory = [];
                     
                     const networkConfig = {
                         hiddenLayers: this.project.layers
@@ -591,25 +603,48 @@
                         activation: this.project.layers.find(layer => layer.type === 'output')?.activation || 'sigmoid'
                     };
                     
-                    this.project.network = new brain.NeuralNetwork(networkConfig);
+                    // Исправлено: правильное создание нейросети
+                    this.project.network = new brain.NeuralNetwork();
                     
                     const trainingData = this.prepareTrainingData();
                     
                     try {
-                        const result = await this.trainNetwork(trainingData);
-                        this.project.status = 'Обучена';
-                        alert(`Обучение завершено! Финальная ошибка: ${result.error.toFixed(6)}`);
+                        // Исправлено: правильное обучение с обновлением статистики
+                        const trainConfig = {
+                            ...this.trainingConfig,
+                            callback: (stats) => {
+                                this.trainingStats.currentIteration = stats.iterations;
+                                this.trainingStats.currentError = stats.error;
+                                this.trainingStats.errorHistory.push(stats.error);
+                                this.updateErrorChart();
+                                
+                                if (stats.iterations >= this.trainingConfig.iterations || stats.error <= this.trainingConfig.errorThresh) {
+                                    this.isTraining = false;
+                                    this.project.status = 'Обучена';
+                                }
+                            },
+                            callbackPeriod: this.trainingConfig.logPeriod
+                        };
+                        
+                        this.project.network.train(trainingData, trainConfig);
+                        
                     } catch (error) {
                         console.error('Training error:', error);
                         alert('Ошибка при обучении: ' + error.message);
-                    } finally {
                         this.isTraining = false;
+                        this.project.status = 'Ошибка';
                     }
                 },
                 
                 prepareTrainingData() {
+                    if (this.project.data.length === 0) return [];
+                    
                     const keys = Object.keys(this.project.data[0]);
-                    const inputKeys = keys.slice(0, -1);
+                    // Исправлено: более надежное определение входов и выходов
+                    const inputKeys = keys.filter(key => 
+                        typeof this.project.data[0][key] === 'number' && 
+                        key !== keys[keys.length - 1]
+                    );
                     const outputKey = keys[keys.length - 1];
                     
                     return this.project.data.map(row => ({
@@ -621,25 +656,6 @@
                     }));
                 },
                 
-                async trainNetwork(trainingData) {
-                    return new Promise((resolve, reject) => {
-                        this.project.network.train(trainingData, {
-                            ...this.trainingConfig,
-                            callback: (result) => {
-                                this.trainingStats.currentIteration = result.iterations;
-                                this.trainingStats.currentError = result.error;
-                                this.trainingStats.errorHistory.push(result.error);
-                                this.updateErrorChart();
-                            },
-                            callbackPeriod: this.trainingConfig.logPeriod
-                        });
-                        
-                        setTimeout(() => {
-                            resolve({ error: 0.001 });
-                        }, 2000);
-                    });
-                },
-                
                 pauseTraining() {
                     this.isTraining = false;
                     this.project.status = 'На паузе';
@@ -648,18 +664,21 @@
                 stopTraining() {
                     this.isTraining = false;
                     this.project.status = 'Остановлена';
-                    this.trainingStats.currentIteration = 0;
-                    this.trainingStats.currentError = 0;
                 },
                 
                 updateErrorChart() {
                     const canvas = document.getElementById('errorChart');
+                    if (!canvas) return;
+                    
                     const ctx = canvas.getContext('2d');
                     const data = this.trainingStats.errorHistory;
                     
                     if (data.length === 0) return;
                     
+                    // Очистка canvas
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    // Настройки графика
                     ctx.beginPath();
                     ctx.strokeStyle = '#007bff';
                     ctx.lineWidth = 2;
@@ -668,6 +687,7 @@
                     const minError = Math.min(...data);
                     const errorRange = maxError - minError || 1;
                     
+                    // Отрисовка линии
                     data.forEach((error, index) => {
                         const x = (index / (data.length - 1)) * canvas.width;
                         const y = canvas.height - ((error - minError) / errorRange) * canvas.height;
@@ -685,7 +705,10 @@
                 updateTestInputs() {
                     if (this.project.data.length > 0) {
                         const sample = this.project.data[0];
-                        const inputKeys = Object.keys(sample).slice(0, -1);
+                        const inputKeys = Object.keys(sample).filter(key => 
+                            typeof sample[key] === 'number' && 
+                            key !== Object.keys(sample)[Object.keys(sample).length - 1]
+                        );
                         
                         this.testInputs = inputKeys.reduce((acc, key) => {
                             acc[key] = sample[key];
@@ -697,7 +720,18 @@
                 runTest() {
                     if (this.project.network && Object.keys(this.testInputs).length > 0) {
                         try {
-                            this.testResult = this.project.network.run(this.testInputs);
+                            // Нормализация входных данных для тестирования
+                            const normalizedInputs = {...this.testInputs};
+                            Object.keys(normalizedInputs).forEach(key => {
+                                if (this.project.normalization[key]) {
+                                    const { min, max } = this.project.normalization[key];
+                                    if (max !== min) {
+                                        normalizedInputs[key] = (normalizedInputs[key] - min) / (max - min);
+                                    }
+                                }
+                            });
+                            
+                            this.testResult = this.project.network.run(normalizedInputs);
                         } catch (error) {
                             console.error('Test error:', error);
                             alert('Ошибка при тестировании: ' + error.message);
@@ -725,16 +759,33 @@
                     }
                     
                     const modelData = this.project.network.toJSON();
+                    
+                    // Добавление информации о нормализации в экспортируемый код
+                    const normalizationCode = this.project.normalization && Object.keys(this.project.normalization).length > 0 
+                        ? `\n// Функция для нормализации входных данных
+function normalizeInput(input) {
+    const normalized = {...input};
+    ${Object.keys(this.project.normalization).map(key => {
+        const { min, max } = this.project.normalization[key];
+        return `if (normalized.${key} !== undefined) {
+        normalized.${key} = (normalized.${key} - ${min}) / (${max} - ${min});
+    }`;
+    }).join('\n    ')}
+    return normalized;
+}`
+                        : '';
+                    
                     const code = `// Brain.js модель нейронной сети
 const brain = require('brain.js');
 
 // Создание и конфигурация сети
 const net = new brain.NeuralNetwork();
-net.fromJSON(${JSON.stringify(modelData, null, 2)});
+net.fromJSON(${JSON.stringify(modelData, null, 2)});${normalizationCode}
 
 // Функция для предсказания
 function predict(input) {
-    return net.run(input);
+    ${this.project.normalization && Object.keys(this.project.normalization).length > 0 ? 'const normalizedInput = normalizeInput(input);' : 'const normalizedInput = input;'}
+    return net.run(normalizedInput);
 }
 
 // Пример использования
@@ -747,6 +798,11 @@ function predict(input) {
                 
                 exportTrainingChart() {
                     const canvas = document.getElementById('errorChart');
+                    if (!canvas) {
+                        alert('Сначала обучите модель для создания графика');
+                        return;
+                    }
+                    
                     const link = document.createElement('a');
                     link.download = 'training-chart.png';
                     link.href = canvas.toDataURL('image/png');
@@ -763,8 +819,16 @@ function predict(input) {
                 },
                 
                 copyToClipboard() {
+                    if (!this.exportedCode) {
+                        alert('Сначала экспортируйте код');
+                        return;
+                    }
+                    
                     navigator.clipboard.writeText(this.exportedCode).then(() => {
                         alert('Код скопирован в буфер обмена');
+                    }).catch(err => {
+                        console.error('Copy failed:', err);
+                        alert('Ошибка при копировании: ' + err.message);
                     });
                 }
             };
