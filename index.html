@@ -18,7 +18,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <!-- D3.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+    <script src=https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
     
     <!-- Brain.js -->
     <script src="https://cdn.jsdelivr.net/npm/brain.js@2.0.0-beta.21/browser.js"></script>
@@ -890,7 +890,16 @@
                         description: 'Базовая feedforward нейронная сеть с обратным распространением ошибки',
                         longDescription: 'Классическая многослойная нейронная сеть прямого распространения. Идеально подходит для задач классификации и регрессии с числовыми данными.',
                         useCases: ['Классификация изображений', 'Прогнозирование числовых значений', 'Распознавание паттернов'],
-                        features: ['Быстрая обучение', 'Простая архитектура', 'Хорошая интерпретируемость']
+                        features: ['Быстрая обучение', 'Простая архитектура', 'Хорошая интерпретируемость'],
+                        sample: {
+                            data: [
+                                { input: [0, 0], output: [0] },
+                                { input: [0, 1], output: [1] },
+                                { input: [1, 0], output: [1] },
+                                { input: [1, 1], output: [0] }
+                            ],
+                            testInput: '[0, 1]'
+                        }
                     },
                     {
                         id: 'neural-network-gpu',
@@ -900,7 +909,16 @@
                         description: 'Тот же функционал, но с GPU ускорением для больших наборов данных',
                         longDescription: 'GPU-ускоренная версия feedforward нейронной сети. Обеспечивает значительное ускорение обучения на больших наборах данных за счет использования графического процессора.',
                         useCases: ['Большие наборы данных', 'Сложные архитектуры', 'Быстрое прототипирование'],
-                        features: ['GPU ускорение', 'Высокая производительность', 'Поддержка больших моделей']
+                        features: ['GPU ускорение', 'Высокая производительность', 'Поддержка больших моделей'],
+                        sample: {
+                            data: [
+                                { input: [0, 0], output: [0] },
+                                { input: [0, 1], output: [1] },
+                                { input: [1, 0], output: [1] },
+                                { input: [1, 1], output: [0] }
+                            ],
+                            testInput: '[1, 0]'
+                        }
                     },
                     {
                         id: 'rnn',
@@ -910,7 +928,16 @@
                         description: 'Рекуррентная нейронная сеть для последовательностей данных',
                         longDescription: 'Рекуррентные нейронные сети предназначены для работы с последовательными данными, где порядок имеет значение. Они имеют "память" о предыдущих элементах последовательности.',
                         useCases: ['Анализ временных рядов', 'Обработка естественного языка', 'Распознавание речи'],
-                        features: ['Работа с последовательностями', 'Внутренняя память', 'Обработка данных переменной длины']
+                        features: ['Работа с последовательностями', 'Внутренняя память', 'Обработка данных переменной длины'],
+                        sample: {
+                            data: [
+                                { input: 'I feel great about the world!', output: 'happy' },
+                                { input: 'The world is a terrible place!', output: 'sad' },
+                                { input: 'What a beautiful day', output: 'happy' },
+                                { input: 'This is so frustrating', output: 'sad' }
+                            ],
+                            testInput: '"I am so happy today"'
+                        }
                     },
                     {
                         id: 'lstm',
@@ -920,7 +947,18 @@
                         description: 'Долгая краткосрочная память для сложных последовательностей',
                         longDescription: 'LSTM - это особый тип рекуррентной нейронной сети, способный обучаться долгосрочным зависимостям. Имеет механизмы "вентилей" для контроля потока информации.',
                         useCases: ['Машинный перевод', 'Генерация текста', 'Прогнозирование временных рядов'],
-                        features: ['Долгосрочная память', 'Устойчивость к затуханию градиента', 'Сложные последовательности']
+                        features: ['Долгосрочная память', 'Устойчивость к затуханию градиента', 'Сложные последовательности'],
+                        sample: {
+                            data: [
+                                { input: 'I will write a book', output: 'future' },
+                                { input: 'He will be writing a book', output: 'future' },
+                                { input: 'I was selfish', output: 'past' },
+                                { input: 'We had money', output: 'past' },
+                                { input: 'I am here', output: 'present' },
+                                { input: 'Are you eating regularly', output: 'present' }
+                            ],
+                            testInput: '"Will you help me"'
+                        }
                     },
                     {
                         id: 'gru',
@@ -930,7 +968,18 @@
                         description: 'Gated Recurrent Unit - упрощенная версия LSTM',
                         longDescription: 'GRU - это упрощенная версия LSTM с меньшим количеством параметров. Сохраняет способность обучаться долгосрочным зависимостям, но обучается быстрее.',
                         useCases: ['Анализ тональности', 'Автодополнение текста', 'Классификация последовательностей'],
-                        features: ['Меньше параметров', 'Быстрее обучение', 'Сопоставимая с LSTM производительность']
+                        features: ['Меньше параметров', 'Быстрее обучение', 'Сопоставимая с LSTM производительность'],
+                        sample: {
+                            data: [
+                                { input: 'Argon', output: 'a' },
+                                { input: 'Argentina', output: 'a' },
+                                { input: 'Barcelona', output: 'b' },
+                                { input: 'Baseball', output: 'b' },
+                                { input: 'China', output: 'c' },
+                                { input: 'Chile', output: 'c' }
+                            ],
+                            testInput: '"Code"'
+                        }
                     },
                     {
                         id: 'rnn-time-step',
@@ -940,7 +989,16 @@
                         description: 'RNN для прогнозирования временных рядов',
                         longDescription: 'Специализированная версия RNN, оптимизированная для работы с временными рядами. Может предсказывать следующие значения в последовательности.',
                         useCases: ['Прогнозирование акций', 'Предсказание погоды', 'Анализ сенсорных данных'],
-                        features: ['Прогнозирование временных рядов', 'Работа с числовыми последовательностями', 'Многовариантное прогнозирование']
+                        features: ['Прогнозирование временных рядов', 'Работа с числовыми последовательностями', 'Многовариантное прогнозирование'],
+                        sample: {
+                            data: [
+                                [1, 2, 3, 4, 5],
+                                [2, 3, 4, 5, 6],
+                                [3, 4, 5, 6, 7],
+                                [4, 5, 6, 7, 8]
+                            ],
+                            testInput: '[5, 6, 7, 8, 9]'
+                        }
                     },
                     {
                         id: 'lstm-time-step',
@@ -950,7 +1008,19 @@
                         description: 'LSTM для сложных временных рядов',
                         longDescription: 'LSTM, специализированная для анализа временных рядов. Эффективна для данных с долгосрочными зависимостями и сезонными паттернами.',
                         useCases: ['Энергопотребление', 'Финансовые прогнозы', 'Медицинские данные'],
-                        features: ['Сезонные паттерны', 'Долгосрочные зависимости', 'Шумоподавление']
+                        features: ['Сезонные паттерны', 'Долгосрочные зависимости', 'Шумоподавление'],
+                        sample: {
+                            data: [
+                                [
+                                    [1, 5],
+                                    [2, 4],
+                                    [3, 3],
+                                    [4, 2],
+                                    [5, 1]
+                                ]
+                            ],
+                            testInput: '[[1, 5], [2, 4], [3, 3], [4, 2]]'
+                        }
                     },
                     {
                         id: 'ae',
@@ -960,7 +1030,16 @@
                         description: 'Автоэнкодер для сжатия данных и поиска аномалий',
                         longDescription: 'Автоэнкодеры - это нейронные сети, которые учатся сжимать и восстанавливать данные. Состоят из энкодера (сжатие) и декодера (восстановление).',
                         useCases: ['Снижение размерности', 'Обнаружение аномалий', 'Шумоподавление'],
-                        features: ['Неrequire размеченных данных', 'Сжатие данных', 'Выявление скрытых паттернов']
+                        features: ['Неrequire размеченных данных', 'Сжатие данных', 'Выявление скрытых паттернов'],
+                        sample: {
+                            data: [
+                                [0, 0, 0],
+                                [0, 1, 1],
+                                [1, 0, 1],
+                                [1, 1, 0]
+                            ],
+                            testInput: '[0, 1, 1]'
+                        }
                     }
                 ],
                 
@@ -1012,6 +1091,41 @@
                 // Выбор типа сети
                 selectNetworkType(network) {
                     this.selectedNetworkType = network;
+                    
+                    // Автоматически настраиваем конфигурацию модели для выбранного типа сети
+                    if (network.sample && network.sample.data) {
+                        if (Array.isArray(network.sample.data) && network.sample.data.length > 0) {
+                            const firstSample = network.sample.data[0];
+                            
+                            // Для временных рядов и автоэнкодеров используем специальную логику
+                            if (network.id.includes('time-step') || network.id === 'ae') {
+                                // Для временных рядов и AE данные могут быть в другом формате
+                                if (Array.isArray(firstSample) && Array.isArray(firstSample[0])) {
+                                    // Многомерные временные ряды
+                                    this.modelConfig.inputSize = firstSample[0].length;
+                                    this.modelConfig.outputSize = firstSample[0].length;
+                                } else if (Array.isArray(firstSample)) {
+                                    // Одномерные временные ряды
+                                    this.modelConfig.inputSize = 1;
+                                    this.modelConfig.outputSize = 1;
+                                }
+                            } else if (typeof firstSample === 'object' && firstSample.input !== undefined) {
+                                // Стандартный формат {input, output}
+                                if (Array.isArray(firstSample.input)) {
+                                    this.modelConfig.inputSize = firstSample.input.length;
+                                } else {
+                                    this.modelConfig.inputSize = Object.keys(firstSample.input).length;
+                                }
+                                
+                                if (Array.isArray(firstSample.output)) {
+                                    this.modelConfig.outputSize = firstSample.output.length;
+                                } else {
+                                    this.modelConfig.outputSize = Object.keys(firstSample.output).length;
+                                }
+                            }
+                        }
+                    }
+                    
                     this.addLog(`Выбран тип сети: ${network.name}`);
                 },
                 
@@ -1029,14 +1143,26 @@
                 
                 // Загрузка примера данных
                 showSampleData() {
-                    this.manualDataInput = JSON.stringify([
-                        { input: [0, 0], output: [0] },
-                        { input: [0, 1], output: [1] },
-                        { input: [1, 0], output: [1] },
-                        { input: [1, 1], output: [0] }
-                    ], null, 2);
-                    this.parseData();
-                    this.addLog('Загружены примеры данных (XOR)');
+                    if (this.selectedNetworkType.sample && this.selectedNetworkType.sample.data) {
+                        // Для временных рядов и автоэнкодеров данные могут быть в другом формате
+                        if (this.selectedNetworkType.id.includes('time-step') || this.selectedNetworkType.id === 'ae') {
+                            this.manualDataInput = JSON.stringify(this.selectedNetworkType.sample.data, null, 2);
+                        } else {
+                            this.manualDataInput = JSON.stringify(this.selectedNetworkType.sample.data, null, 2);
+                        }
+                        this.parseData();
+                        this.addLog(`Загружены примеры данных для ${this.selectedNetworkType.name}`);
+                    } else {
+                        // Fallback для сетей без примеров
+                        this.manualDataInput = JSON.stringify([
+                            { input: [0, 0], output: [0] },
+                            { input: [0, 1], output: [1] },
+                            { input: [1, 0], output: [1] },
+                            { input: [1, 1], output: [0] }
+                        ], null, 2);
+                        this.parseData();
+                        this.addLog('Загружены стандартные примеры данных (XOR)');
+                    }
                 },
                 
                 // Обработка загрузки файла
@@ -1088,7 +1214,13 @@
                     try {
                         const data = JSON.parse(this.manualDataInput);
                         if (Array.isArray(data)) {
-                            this.trainingData = data;
+                            // Для временных рядов и автоэнкодеров данные могут быть в другом формате
+                            if (this.selectedNetworkType.id.includes('time-step') || this.selectedNetworkType.id === 'ae') {
+                                this.trainingData = data;
+                            } else {
+                                // Стандартный формат - массив объектов {input, output}
+                                this.trainingData = data;
+                            }
                             this.addLog(`Загружено ${data.length} записей`);
                         } else {
                             alert('Данные должны быть массивом объектов');
@@ -1126,6 +1258,17 @@
                 getInputSize() {
                     if (this.trainingData.length === 0) return 0;
                     const firstItem = this.trainingData[0];
+                    
+                    // Для временных рядов и автоэнкодеров
+                    if (this.selectedNetworkType.id.includes('time-step') || this.selectedNetworkType.id === 'ae') {
+                        if (Array.isArray(firstItem) && Array.isArray(firstItem[0])) {
+                            return firstItem[0].length;
+                        } else if (Array.isArray(firstItem)) {
+                            return 1;
+                        }
+                    }
+                    
+                    // Стандартный формат
                     if (Array.isArray(firstItem.input)) {
                         return firstItem.input.length;
                     } else if (typeof firstItem.input === 'object') {
@@ -1137,6 +1280,17 @@
                 getOutputSize() {
                     if (this.trainingData.length === 0) return 0;
                     const firstItem = this.trainingData[0];
+                    
+                    // Для временных рядов и автоэнкодеров
+                    if (this.selectedNetworkType.id.includes('time-step') || this.selectedNetworkType.id === 'ae') {
+                        if (Array.isArray(firstItem) && Array.isArray(firstItem[0])) {
+                            return firstItem[0].length;
+                        } else if (Array.isArray(firstItem)) {
+                            return 1;
+                        }
+                    }
+                    
+                    // Стандартный формат
                     if (Array.isArray(firstItem.output)) {
                         return firstItem.output.length;
                     } else if (typeof firstItem.output === 'object') {
@@ -1148,17 +1302,42 @@
                 getDataType() {
                     if (this.trainingData.length === 0) return 'Неизвестно';
                     const firstItem = this.trainingData[0];
+                    
+                    // Для временных рядов и автоэнкодеров
+                    if (this.selectedNetworkType.id.includes('time-step') || this.selectedNetworkType.id === 'ae') {
+                        if (Array.isArray(firstItem) && Array.isArray(firstItem[0])) {
+                            return 'Многомерный временной ряд';
+                        } else if (Array.isArray(firstItem)) {
+                            return 'Одномерный временной ряд';
+                        }
+                    }
+                    
+                    // Стандартный формат
                     if (Array.isArray(firstItem.input)) {
                         return 'Массив чисел';
                     } else if (typeof firstItem.input === 'object') {
                         return 'Объект';
+                    } else if (typeof firstItem.input === 'string') {
+                        return 'Текст';
                     }
                     return 'Число';
                 },
                 
                 getProblemType() {
                     if (this.trainingData.length === 0) return 'Неизвестно';
+                    
+                    // Для временных рядов и автоэнкодеров
+                    if (this.selectedNetworkType.id.includes('time-step')) {
+                        return 'Прогнозирование временных рядов';
+                    } else if (this.selectedNetworkType.id === 'ae') {
+                        return 'Сжатие данных';
+                    }
+                    
                     const firstOutput = this.trainingData[0].output;
+                    
+                    if (typeof firstOutput === 'string') {
+                        return 'Классификация текста';
+                    }
                     
                     if (Array.isArray(firstOutput)) {
                         // Если выходы - это массивы с 0 и 1 (one-hot encoding)
@@ -1243,6 +1422,7 @@
                     this.currentIteration = 0;
                     this.currentError = 0;
                     this.trainingTime = 0;
+                    this.trainingResult = null;
                     this.trainingLogs = [];
                     this.trainedModel = null;
                     
@@ -1295,12 +1475,40 @@
                             // Создаем простую модель для демонстрации
                             this.trainedModel = {
                                 run: (input) => {
-                                    // Простая имитация XOR
-                                    if (Array.isArray(input) && input.length === 2) {
-                                        const [a, b] = input;
-                                        return [a ^ b]; // XOR операция
+                                    try {
+                                        // В реальном приложении здесь будет вызов обученной модели Brain.js
+                                        // Для демонстрации возвращаем простые результаты
+                                        if (this.selectedNetworkType.id === 'neural-network' || 
+                                            this.selectedNetworkType.id === 'neural-network-gpu') {
+                                            // Для XOR
+                                            if (Array.isArray(input) && input.length === 2) {
+                                                const [a, b] = input;
+                                                return [a ^ b]; // XOR операция
+                                            }
+                                        } else if (this.selectedNetworkType.id.includes('rnn') || 
+                                                   this.selectedNetworkType.id.includes('lstm') || 
+                                                   this.selectedNetworkType.id.includes('gru')) {
+                                            // Для текстовых моделей
+                                            return 'positive';
+                                        } else if (this.selectedNetworkType.id.includes('time-step')) {
+                                            // Для временных рядов
+                                            if (Array.isArray(input) && Array.isArray(input[0])) {
+                                                // Многомерные данные
+                                                return input[0].map(val => val + 1);
+                                            } else {
+                                                // Одномерные данные
+                                                return [input[input.length - 1] + 1];
+                                            }
+                                        } else if (this.selectedNetworkType.id === 'ae') {
+                                            // Для автоэнкодера
+                                            return input; // Просто возвращаем входные данные
+                                        }
+                                        
+                                        return [Math.random()];
+                                    } catch (e) {
+                                        console.error('Error in model run:', e);
+                                        return ['Error'];
                                     }
-                                    return [Math.random()];
                                 }
                             };
                             
@@ -1329,7 +1537,17 @@
                     }
                     
                     try {
-                        const input = JSON.parse(this.testInput);
+                        let input = this.testInput;
+                        
+                        // Обработка разных форматов входных данных
+                        if (this.testInput.trim().startsWith('"') && this.testInput.trim().endsWith('"')) {
+                            // Строковый ввод
+                            input = this.testInput.trim().slice(1, -1);
+                        } else {
+                            // JSON ввод
+                            input = JSON.parse(this.testInput);
+                        }
+                        
                         this.testResult = this.trainedModel.run(input);
                         this.addLog(`Выполнен тест с входными данными: ${this.testInput}`);
                     } catch (e) {
@@ -1339,21 +1557,84 @@
                 
                 // Загрузка примера теста
                 loadExampleTest() {
-                    this.testInput = '[0, 1]';
+                    if (this.selectedNetworkType.sample && this.selectedNetworkType.sample.testInput) {
+                        this.testInput = this.selectedNetworkType.sample.testInput;
+                        this.addLog(`Загружен пример теста для ${this.selectedNetworkType.name}`);
+                    } else {
+                        // Fallback
+                        this.testInput = '[0, 1]';
+                        this.addLog('Загружен стандартный пример теста');
+                    }
                 },
                 
                 // Генерация кода модели
                 generateModelCode() {
-                    return `// Код для Brain.js
-const net = new brain.${this.getNetworkConstructor()}(${JSON.stringify(this.modelConfig, null, 2)});
+                    const networkConstructor = this.getNetworkConstructor();
+                    const isRecurrent = this.selectedNetworkType.id.includes('rnn') || 
+                                       this.selectedNetworkType.id.includes('lstm') || 
+                                       this.selectedNetworkType.id.includes('gru');
+                    
+                    let code = '';
+                    
+                    if (isRecurrent) {
+                        code = `// Код для Brain.js - ${this.selectedNetworkType.name}
+const net = new brain.${networkConstructor}(${JSON.stringify(this.modelConfig, null, 2)});
 
 const trainingData = ${JSON.stringify(this.trainingData, null, 2)};
 
 net.train(trainingData, ${JSON.stringify(this.trainingConfig, null, 2)});
 
 // Использование модели
-const output = net.run([0, 1]);
+const output = net.run(${this.testInput || '"Пример текста"'});
 console.log(output);`;
+                    } else if (this.selectedNetworkType.id.includes('time-step')) {
+                        code = `// Код для Brain.js - ${this.selectedNetworkType.name}
+const net = new brain.${networkConstructor}(${JSON.stringify(this.modelConfig, null, 2)});
+
+const trainingData = ${JSON.stringify(this.trainingData, null, 2)};
+
+net.train(trainingData, ${JSON.stringify(this.trainingConfig, null, 2)});
+
+// Использование модели
+const output = net.run(${this.testInput || '[1, 2, 3]'});
+console.log(output);
+
+// Прогнозирование
+const forecast = net.forecast(${this.testInput || '[1, 2, 3]'}, 3);
+console.log('Прогноз:', forecast);`;
+                    } else if (this.selectedNetworkType.id === 'ae') {
+                        code = `// Код для Brain.js - ${this.selectedNetworkType.name}
+const net = new brain.${networkConstructor}(${JSON.stringify(this.modelConfig, null, 2)});
+
+const trainingData = ${JSON.stringify(this.trainingData, null, 2)};
+
+net.train(trainingData, ${JSON.stringify(this.trainingConfig, null, 2)});
+
+// Использование автоэнкодера
+const input = ${this.testInput || '[0, 1, 1]'};
+const encoded = net.encode(input);
+const decoded = net.decode(encoded);
+const denoised = net.denoise(input);
+const hasAnomalies = net.includesAnomalies(input);
+
+console.log('Закодировано:', encoded);
+console.log('Декодировано:', decoded);
+console.log('Очищено:', denoised);
+console.log('Есть аномалии:', hasAnomalies);`;
+                    } else {
+                        code = `// Код для Brain.js - ${this.selectedNetworkType.name}
+const net = new brain.${networkConstructor}(${JSON.stringify(this.modelConfig, null, 2)});
+
+const trainingData = ${JSON.stringify(this.trainingData, null, 2)};
+
+net.train(trainingData, ${JSON.stringify(this.trainingConfig, null, 2)});
+
+// Использование модели
+const output = net.run(${this.testInput || '[0, 1]'});
+console.log(output);`;
+                    }
+                    
+                    return code;
                 },
                 
                 // Получение конструктора сети
