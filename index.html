@@ -1,14 +1,16 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en" class="h-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brain.js Neural Network Builder</title>
+    <title>ML5.js Neural Network Tool</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     
@@ -17,819 +19,566 @@
             font-family: 'Roboto', sans-serif;
             background-color: #f8f9fa;
         }
-        .navbar-brand {
-            font-weight: 700;
+        .nav-tabs .nav-link {
+            font-size: 0.875rem;
+            padding: 0.5rem 0.75rem;
         }
         .module-section {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 1rem;
-            padding: 1rem;
+            display: none;
         }
-        .layer-node {
-            cursor: move;
-            transition: all 0.3s ease;
+        .module-section.active {
+            display: block;
         }
-        .layer-node:hover {
-            transform: scale(1.05);
+        .image-preview {
+            height: 80px;
+            object-fit: cover;
+        }
+        .layer-palette {
+            min-height: 200px;
+            border: 2px dashed #dee2e6;
         }
         .training-chart {
-            height: 200px;
-            background: #f8f9fa;
-            border-radius: 4px;
+            height: 300px;
         }
-        .network-canvas {
-            min-height: 400px;
-            border: 2px dashed #dee2e6;
-            border-radius: 8px;
+        .compact-form .form-label {
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
         }
-        [x-cloak] { display: none !important; }
+        .compact-form .form-control, .compact-form .form-select {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
     </style>
 </head>
-<body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-sm navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-brain me-2"></i>Brain.js Network Builder
-            </a>
+<body class="d-flex flex-column h-100" x-data="app()">
+    <!-- Header -->
+    <header class="navbar navbar-dark bg-dark navbar-expand-sm">
+        <div class="container-sm">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-brain me-2"></i>ML5 Neural Network Tool
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Navigation -->
+    <nav class="navbar navbar-light bg-light navbar-expand-sm">
+        <div class="container-sm">
+            <ul class="navbar-nav nav-tabs flex-row w-100">
+                <li class="nav-item">
+                    <a class="nav-link" :class="{ 'active': activeModule === 'data' }" 
+                       @click="activeModule = 'data'">
+                        <i class="fas fa-database me-1"></i>Data
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" :class="{ 'active': activeModule === 'model' }" 
+                       @click="activeModule = 'model'">
+                        <i class="fas fa-project-diagram me-1"></i>Model
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" :class="{ 'active': activeModule === 'training' }" 
+                       @click="activeModule = 'training'">
+                        <i class="fas fa-play-circle me-1"></i>Training
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" :class="{ 'active': activeModule === 'testing' }" 
+                       @click="activeModule = 'testing'">
+                        <i class="fas fa-vial me-1"></i>Testing
+                    </a>
+                </li>
+            </ul>
         </div>
     </nav>
 
-    <div class="container-fluid mt-3" id="app" x-data="app()" x-init="init()" x-cloak>
-        <!-- Project Management -->
-        <div class="module-section">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="mb-0"><i class="fas fa-project-diagram me-2"></i>Управление проектами</h5>
-                <div>
-                    <button class="btn btn-sm btn-outline-primary me-1" @click="newProject()">
-                        <i class="fas fa-plus me-1"></i>Новый
-                    </button>
-                    <button class="btn btn-sm btn-outline-success me-1" @click="saveProject()">
-                        <i class="fas fa-save me-1"></i>Сохранить
-                    </button>
-                    <button class="btn btn-sm btn-outline-info" @click="loadProject()">
-                        <i class="fas fa-folder-open me-1"></i>Загрузить
-                    </button>
-                </div>
-            </div>
-            
-            <div class="row">
-                <div class="col-sm-6">
-                    <input type="text" class="form-control form-control-sm" placeholder="Название проекта" x-model="project.name">
-                </div>
-                <div class="col-sm-6">
-                    <div class="form-text" x-text="`Слоев: ${project.layers.length}, Статус: ${project.status}`"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Navigation Tabs -->
-        <ul class="nav nav-tabs mb-3">
-            <li class="nav-item">
-                <a class="nav-link" :class="{ 'active': activeTab === 'design' }" href="#" @click="activeTab = 'design'">
-                    <i class="fas fa-drafting-compass me-1"></i>Конструктор
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" :class="{ 'active': activeTab === 'data' }" href="#" @click="activeTab = 'data'">
-                    <i class="fas fa-database me-1"></i>Данные
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" :class="{ 'active': activeTab === 'training' }" href="#" @click="activeTab = 'training'">
-                    <i class="fas fa-play me-1"></i>Обучение
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" :class="{ 'active': activeTab === 'testing' }" href="#" @click="activeTab = 'testing'">
-                    <i class="fas fa-vial me-1"></i>Тестирование
-                </a>
-            </li>
-        </ul>
-
-        <!-- Network Designer -->
-        <div x-show="activeTab === 'design'" class="module-section">
-            <div class="row">
-                <div class="col-sm-3">
-                    <h6><i class="fas fa-shapes me-1"></i>Библиотека слоев</h6>
-                    <div class="d-grid gap-1">
-                        <button class="btn btn-sm btn-outline-primary layer-node" 
-                                @click="addLayer('input')" data-layer-type="input">
-                            <i class="fas fa-sign-in-alt me-1"></i>Входной слой
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary layer-node" 
-                                @click="addLayer('hidden')" data-layer-type="hidden">
-                            <i class="fas fa-square me-1"></i>Скрытый слой
-                        </button>
-                        <button class="btn btn-sm btn-outline-success layer-node" 
-                                @click="addLayer('output')" data-layer-type="output">
-                            <i class="fas fa-sign-out-alt me-1"></i>Выходной слой
-                        </button>
-                    </div>
-                    
-                    <div class="mt-3" x-show="selectedLayer">
-                        <h6>Свойства слоя</h6>
-                        <div class="mb-2">
-                            <label class="form-label small mb-1">Нейронов:</label>
-                            <input type="number" class="form-control form-control-sm" 
-                                   x-model="selectedLayer.neurons" min="1" max="1000">
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label small mb-1">Активация:</label>
-                            <select class="form-select form-select-sm" x-model="selectedLayer.activation">
-                                <option value="sigmoid">Sigmoid</option>
-                                <option value="relu">ReLU</option>
-                                <option value="leaky-relu">Leaky ReLU</option>
-                                <option value="tanh">Tanh</option>
-                            </select>
-                        </div>
-                        <button class="btn btn-sm btn-danger w-100" @click="removeLayer(selectedLayer)">
-                            <i class="fas fa-trash me-1"></i>Удалить слой
-                        </button>
-                    </div>
+    <!-- Main Content -->
+    <main class="flex-grow-1 container-sm py-3">
+        <!-- Data Manager Module -->
+        <section id="data-manager" class="module-section" :class="{ 'active': activeModule === 'data' }">
+            <div class="row g-2">
+                <div class="col-12">
+                    <h5 class="mb-2"><i class="fas fa-database me-2"></i>Data Manager</h5>
                 </div>
                 
-                <div class="col-sm-9">
-                    <h6><i class="fas fa-project-diagram me-1"></i>Архитектура сети</h6>
-                    <div class="network-canvas position-relative p-3" 
-                         @dragover.prevent 
-                         @drop="handleDrop($event)">
-                        
-                        <!-- Визуальное отображение слоев -->
-                        <template x-for="(layer, index) in project.layers" :key="layer.id">
-                            <div class="card layer-node mb-2" 
-                                 :class="{
-                                     'border-primary': layer.type === 'input',
-                                     'border-secondary': layer.type === 'hidden', 
-                                     'border-success': layer.type === 'output'
-                                 }"
-                                 @click="selectedLayer = layer"
-                                 :draggable="true"
-                                 @dragstart="dragStart($event, layer)">
-                                <div class="card-body py-2">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <span class="badge" 
-                                                  :class="{
-                                                      'bg-primary': layer.type === 'input',
-                                                      'bg-secondary': layer.type === 'hidden',
-                                                      'bg-success': layer.type === 'output'
-                                                  }">
-                                                <span x-text="layer.type === 'input' ? 'Вход' : 
-                                                             layer.type === 'output' ? 'Выход' : 'Скрытый'"></span>
-                                            </span>
-                                            <span class="ms-2" x-text="`${layer.neurons} нейронов`"></span>
-                                        </div>
-                                        <small class="text-muted" x-text="layer.activation"></small>
+                <!-- Upload Section -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Upload Images</h6>
+                            <div class="mb-2">
+                                <input type="file" class="form-control form-control-sm" 
+                                       id="imageUpload" multiple accept="image/*" 
+                                       @change="handleImageUpload">
+                            </div>
+                            <div class="d-grid">
+                                <button class="btn btn-sm btn-outline-primary" @click="startWebcam">
+                                    <i class="fas fa-camera me-1"></i>Use Webcam
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Classes Management -->
+                    <div class="card mt-2">
+                        <div class="card-body">
+                            <h6 class="card-title">Classes</h6>
+                            <div class="input-group input-group-sm mb-2">
+                                <input type="text" class="form-control" placeholder="New class" x-model="newClassName">
+                                <button class="btn btn-outline-success" @click="addClass">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="class-list">
+                                <template x-for="(cls, index) in classes" :key="index">
+                                    <div class="d-flex justify-content-between align-items-center py-1">
+                                        <span x-text="cls"></span>
+                                        <button class="btn btn-sm btn-outline-danger" 
+                                                @click="removeClass(index)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </div>
-                                </div>
-                            </div>
-                        </template>
-                        
-                        <div x-show="project.layers.length === 0" class="text-center text-muted py-5">
-                            <i class="fas fa-project-diagram fa-3x mb-3"></i>
-                            <p>Перетащите слои из библиотеки для начала проектирования</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Data Manager -->
-        <div x-show="activeTab === 'data'" class="module-section">
-            <h5><i class="fas fa-database me-2"></i>Управление данными</h5>
-            
-            <div class="row mb-3">
-                <div class="col-sm-6">
-                    <label class="form-label small">Загрузить данные (CSV/JSON):</label>
-                    <input type="file" class="form-control form-control-sm" @change="loadData($event)" accept=".csv,.json">
-                </div>
-                <div class="col-sm-6">
-                    <div class="form-text" x-text="`Загружено записей: ${project.data.length}`"></div>
-                </div>
-            </div>
-            
-            <div x-show="project.data.length > 0" class="mb-3">
-                <div class="table-responsive" style="max-height: 300px;">
-                    <table class="table table-sm table-striped">
-                        <thead class="sticky-top bg-light">
-                            <tr>
-                                <template x-for="(key, index) in Object.keys(project.data[0] || {})" :key="index">
-                                    <th>
-                                        <select class="form-select form-select-sm" 
-                                                @change="updateColumnType(key, $event.target.value)">
-                                            <option value="input">Вход</option>
-                                            <option value="output">Выход</option>
-                                            <option value="ignore">Игнорировать</option>
-                                        </select>
-                                        <small class="d-block" x-text="key"></small>
-                                    </th>
                                 </template>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template x-for="(row, rowIndex) in project.data.slice(0, 10)" :key="rowIndex">
-                                <tr>
-                                    <template x-for="(value, key) in row" :key="key">
-                                        <td x-text="value"></td>
-                                    </template>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
-                <div x-show="project.data.length > 10" class="text-center text-muted">
-                    <small>Показано 10 из <span x-text="project.data.length"></span> записей</small>
-                </div>
-            </div>
-            
-            <div x-show="project.data.length > 0" class="row">
-                <div class="col-sm-6">
-                    <label class="form-label small">Разделение данных:</label>
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text">Обучающая</span>
-                        <input type="number" class="form-control" x-model="trainingSplit" min="0" max="100">
-                        <span class="input-group-text">%</span>
-                    </div>
-                </div>
-                <div class="col-sm-6">
-                    <button class="btn btn-sm btn-outline-primary mt-4" @click="preprocessData()">
-                        <i class="fas fa-cog me-1"></i>Предобработать данные
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Training Module -->
-        <div x-show="activeTab === 'training'" class="module-section">
-            <h5><i class="fas fa-play me-2"></i>Обучение нейронной сети</h5>
-            
-            <div class="row mb-3">
-                <div class="col-sm-3">
-                    <label class="form-label small">Скорость обучения:</label>
-                    <input type="number" class="form-control form-control-sm" x-model="trainingConfig.learningRate" step="0.01" min="0.001" max="1">
-                </div>
-                <div class="col-sm-3">
-                    <label class="form-label small">Эпох:</label>
-                    <input type="number" class="form-control form-control-sm" x-model="trainingConfig.iterations" min="100" max="100000">
-                </div>
-                <div class="col-sm-3">
-                    <label class="form-label small">Порог ошибки:</label>
-                    <input type="number" class="form-control form-control-sm" x-model="trainingConfig.errorThresh" step="0.001" min="0.001" max="0.1">
-                </div>
-                <div class="col-sm-3">
-                    <label class="form-label small">Лог каждые:</label>
-                    <input type="number" class="form-control form-control-sm" x-model="trainingConfig.logPeriod" min="10" max="1000">
-                </div>
-            </div>
-            
-            <div class="row mb-3">
-                <div class="col-sm-12">
-                    <div class="d-flex gap-1">
-                        <button class="btn btn-sm btn-success" @click="startTraining()" :disabled="isTraining">
-                            <i class="fas fa-play me-1"></i>Начать обучение
-                        </button>
-                        <button class="btn btn-sm btn-warning" @click="pauseTraining()" :disabled="!isTraining">
-                            <i class="fas fa-pause me-1"></i>Пауза
-                        </button>
-                        <button class="btn btn-sm btn-danger" @click="stopTraining()" :disabled="!isTraining">
-                            <i class="fas fa-stop me-1"></i>Остановить
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="training-chart mb-3 p-3">
-                <h6 class="text-center">График ошибки</h6>
-                <canvas id="errorChart" width="400" height="150"></canvas>
-            </div>
-            
-            <div class="row">
-                <div class="col-sm-4">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <h6>Текущая эпоха</h6>
-                            <h4 x-text="trainingStats.currentIteration || 0"></h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-4">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <h6>Текущая ошибка</h6>
-                            <h4 x-text="(trainingStats.currentError || 0).toFixed(6)"></h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-4">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <h6>Статус</h6>
-                            <span class="badge" :class="isTraining ? 'bg-success' : 'bg-secondary'"
-                                  x-text="isTraining ? 'Обучается' : 'Остановлено'"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Testing and Export Module -->
-        <div x-show="activeTab === 'testing'" class="module-section">
-            <h5><i class="fas fa-vial me-2"></i>Тестирование и экспорт</h5>
-            
-            <div class="row">
-                <div class="col-sm-6">
-                    <h6>Тестирование модели</h6>
-                    <div x-show="project.network">
-                        <div class="mb-3" x-for="(input, key) in testInputs" :key="key">
-                            <label class="form-label small" x-text="key"></label>
-                            <input type="number" class="form-control form-control-sm" step="0.001" 
-                                   x-model="testInputs[key]" @input="runTest()">
-                        </div>
-                        
-                        <div x-show="testResult" class="card bg-light">
-                            <div class="card-body">
-                                <h6>Результат предсказания:</h6>
-                                <div x-for="(value, key) in testResult" :key="key">
-                                    <strong x-text="key"></strong>: <span x-text="value.toFixed(4)"></span>
-                                </div>
                             </div>
                         </div>
                     </div>
-                    <div x-show="!project.network" class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-1"></i>Сначала обучите модель
+                </div>
+
+                <!-- Image Preview -->
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Image Preview & Labeling</h6>
+                            <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-2" id="imageGrid">
+                                <template x-for="(image, index) in images" :key="index">
+                                    <div class="col">
+                                        <div class="card">
+                                            <img :src="image.url" class="card-img-top image-preview" 
+                                                 :alt="'Image ' + index">
+                                            <div class="card-body p-2">
+                                                <select class="form-select form-select-sm" 
+                                                        x-model="image.label"
+                                                        @change="updateImageLabel(index, $event.target.value)">
+                                                    <option value="">Select class</option>
+                                                    <template x-for="cls in classes" :key="cls">
+                                                        <option :value="cls" x-text="cls"></option>
+                                                    </template>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Model Builder Module -->
+        <section id="model-builder" class="module-section" :class="{ 'active': activeModule === 'model' }">
+            <div class="row g-2">
+                <div class="col-12">
+                    <h5 class="mb-2"><i class="fas fa-project-diagram me-2"></i>Model Builder</h5>
                 </div>
                 
-                <div class="col-sm-6">
-                    <h6>Экспорт модели</h6>
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-sm btn-outline-primary" @click="exportModelJSON()">
-                            <i class="fas fa-file-code me-1"></i>Экспорт модели (JSON)
-                        </button>
-                        <button class="btn btn-sm btn-outline-success" @click="exportJavaScriptCode()">
-                            <i class="fab fa-js me-1"></i>Экспорт JavaScript кода
-                        </button>
-                        <button class="btn btn-sm btn-outline-info" @click="exportTrainingChart()">
-                            <i class="fas fa-chart-line me-1"></i>Экспорт графика обучения
-                        </button>
+                <!-- Quick Start -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Quick Start</h6>
+                            <div class="compact-form">
+                                <div class="mb-2">
+                                    <label class="form-label">Pre-trained Model</label>
+                                    <select class="form-select form-select-sm" x-model="selectedPretrainedModel">
+                                        <option value="MobileNet">MobileNet</option>
+                                        <option value="ResNet">ResNet</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Number of Classes</label>
+                                    <input type="number" class="form-control form-control-sm" 
+                                           x-model="numClasses" min="2" max="100">
+                                </div>
+                                <div class="d-grid">
+                                    <button class="btn btn-sm btn-success" @click="initializePretrainedModel">
+                                        Initialize Model
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div x-show="exportedCode" class="mt-3">
-                        <label class="form-label small">Код для интеграции:</label>
-                        <textarea class="form-control form-control-sm" rows="8" x-text="exportedCode" readonly></textarea>
-                        <button class="btn btn-sm btn-outline-secondary mt-1" @click="copyToClipboard()">
-                            <i class="fas fa-copy me-1"></i>Копировать в буфер
-                        </button>
+
+                    <!-- Layer Palette -->
+                    <div class="card mt-2">
+                        <div class="card-body">
+                            <h6 class="card-title">Layer Palette</h6>
+                            <div class="d-grid gap-1">
+                                <template x-for="layer in availableLayers" :key="layer.type">
+                                    <button class="btn btn-sm btn-outline-secondary text-start" 
+                                            @click="addLayerToModel(layer)">
+                                        <i class="fas fa-plus me-1"></i>
+                                        <span x-text="layer.name"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Model Canvas -->
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Model Architecture</h6>
+                            <div class="layer-palette rounded p-3" id="modelCanvas">
+                                <template x-for="(layer, index) in modelLayers" :key="index">
+                                    <div class="card mb-2">
+                                        <div class="card-body py-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span x-text="layer.name"></span>
+                                                <div>
+                                                    <button class="btn btn-sm btn-outline-primary me-1" 
+                                                            @click="configureLayer(index)">
+                                                        <i class="fas fa-cog"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" 
+                                                            @click="removeLayer(index)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                <div x-show="modelLayers.length === 0" class="text-center text-muted py-4">
+                                    Drag layers here or use Quick Start
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <!-- CDN зависимости -->
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+        <!-- Training Hub Module -->
+        <section id="training-hub" class="module-section" :class="{ 'active': activeModule === 'training' }">
+            <div class="row g-2">
+                <div class="col-12">
+                    <h5 class="mb-2"><i class="fas fa-play-circle me-2"></i>Training Hub</h5>
+                </div>
+                
+                <!-- Training Controls -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Training Configuration</h6>
+                            <div class="compact-form">
+                                <div class="mb-2">
+                                    <label class="form-label">Learning Rate</label>
+                                    <input type="number" class="form-control form-control-sm" 
+                                           x-model="learningRate" step="0.001" min="0.0001" max="1">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Epochs</label>
+                                    <input type="number" class="form-control form-control-sm" 
+                                           x-model="epochs" min="1" max="1000">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Batch Size</label>
+                                    <input type="number" class="form-control form-control-sm" 
+                                           x-model="batchSize" min="1" max="64">
+                                </div>
+                                <div class="d-grid gap-1">
+                                    <button class="btn btn-sm btn-success" @click="startTraining" 
+                                            :disabled="!canStartTraining">
+                                        <i class="fas fa-play me-1"></i>Start Training
+                                    </button>
+                                    <button class="btn btn-sm btn-warning" @click="pauseTraining" 
+                                            :disabled="!isTraining">
+                                        <i class="fas fa-pause me-1"></i>Pause
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" @click="stopTraining" 
+                                            :disabled="!isTraining">
+                                        <i class="fas fa-stop me-1"></i>Stop
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Training Progress -->
+                    <div class="card mt-2">
+                        <div class="card-body">
+                            <h6 class="card-title">Training Progress</h6>
+                            <div class="progress mb-2" style="height: 20px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     :style="`width: ${trainingProgress}%`" 
+                                     :aria-valuenow="trainingProgress" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    <span x-text="trainingProgress + '%'"></span>
+                                </div>
+                            </div>
+                            <div class="small text-muted">
+                                Epoch: <span x-text="currentEpoch"></span>/<span x-text="epochs"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Training Visualization -->
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Training Metrics</h6>
+                            <div class="training-chart bg-light rounded" id="trainingChart">
+                                <!-- Chart will be rendered here -->
+                                <div class="text-center text-muted py-5" x-show="!isTraining">
+                                    Training metrics will appear here once training starts
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testing & Export Module -->
+        <section id="testing-export" class="module-section" :class="{ 'active': activeModule === 'testing' }">
+            <div class="row g-2">
+                <div class="col-12">
+                    <h5 class="mb-2"><i class="fas fa-vial me-2"></i>Testing & Export</h5>
+                </div>
+                
+                <!-- Testing Interface -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Model Testing</h6>
+                            <div class="mb-3">
+                                <input type="file" class="form-control form-control-sm" 
+                                       id="testImageUpload" accept="image/*" 
+                                       @change="handleTestImageUpload">
+                            </div>
+                            <div class="d-grid mb-3">
+                                <button class="btn btn-sm btn-outline-primary" @click="startTestWebcam">
+                                    <i class="fas fa-camera me-1"></i>Test with Webcam
+                                </button>
+                            </div>
+                            
+                            <!-- Test Results -->
+                            <div id="testResults" x-show="testPredictions.length > 0">
+                                <h6>Predictions:</h6>
+                                <template x-for="prediction in testPredictions" :key="prediction.label">
+                                    <div class="d-flex justify-content-between align-items-center py-1">
+                                        <span x-text="prediction.label"></span>
+                                        <span class="badge bg-primary" 
+                                              x-text="(prediction.confidence * 100).toFixed(2) + '%'"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export Section -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-title">Export Model</h6>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-sm btn-success" @click="exportModel">
+                                    <i class="fas fa-download me-1"></i>Export Model Files
+                                </button>
+                                <button class="btn btn-sm btn-info" @click="generateCode">
+                                    <i class="fas fa-code me-1"></i>Generate Integration Code
+                                </button>
+                            </div>
+                            
+                            <!-- Generated Code -->
+                            <div class="mt-3" x-show="generatedCode">
+                                <label class="form-label">Integration Code:</label>
+                                <textarea class="form-control form-control-sm" rows="8" 
+                                          x-text="generatedCode" readonly></textarea>
+                                <button class="btn btn-sm btn-outline-secondary mt-2" @click="copyCode">
+                                    <i class="fas fa-copy me-1"></i>Copy Code
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-3 mt-auto">
+        <div class="container-sm text-center">
+            <small>ML5.js Neural Network Tool | Built with Alpine.js, Bootstrap & ML5.js</small>
+        </div>
+    </footer>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Brain.js -->
-    <script src="https://cdn.jsdelivr.net/npm/brain.js@2.0.0-beta.21/dist/browser.js"></script>
     
+    <!-- Alpine.js -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    
+    <!-- ML5.js -->
+    <script src="https://unpkg.com/ml5@1.0.0/dist/ml5.min.js"></script>
+
     <script>
         function app() {
             return {
-                activeTab: 'design',
-                project: {
-                    name: 'Новый проект',
-                    layers: [],
-                    status: 'Не обучена',
-                    data: [],
-                    network: null,
-                    normalization: {}
-                },
-                selectedLayer: null,
-                draggedLayer: null,
+                // Application state
+                activeModule: 'data',
+                images: [],
+                classes: [],
+                newClassName: '',
+                selectedPretrainedModel: 'MobileNet',
+                numClasses: 2,
+                modelLayers: [],
+                availableLayers: [
+                    { type: 'dense', name: 'Dense Layer' },
+                    { type: 'conv2d', name: 'Convolutional Layer' },
+                    { type: 'maxpooling2d', name: 'Max Pooling Layer' },
+                    { type: 'dropout', name: 'Dropout Layer' }
+                ],
+                learningRate: 0.001,
+                epochs: 10,
+                batchSize: 16,
                 isTraining: false,
-                trainingConfig: {
-                    learningRate: 0.3,
-                    iterations: 1000,
-                    errorThresh: 0.005,
-                    logPeriod: 100
-                },
-                trainingStats: {
-                    currentIteration: 0,
-                    currentError: 0,
-                    errorHistory: []
-                },
-                testInputs: {},
-                testResult: null,
-                exportedCode: '',
-                trainingSplit: 80,
-                trainingInterval: null,
+                trainingProgress: 0,
+                currentEpoch: 0,
+                testPredictions: [],
+                generatedCode: '',
                 
-                init() {
-                    this.updateTestInputs();
-                    return {};
-                },
-                
-                newProject() {
-                    this.project = {
-                        name: 'Новый проект',
-                        layers: [],
-                        status: 'Не обучена',
-                        data: [],
-                        network: null,
-                        normalization: {}
-                    };
-                    this.selectedLayer = null;
-                    this.testInputs = {};
-                    this.testResult = null;
-                    this.trainingStats.errorHistory = [];
-                    alert('Создан новый проект');
-                },
-                
-                saveProject() {
-                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(
-                        JSON.stringify(this.project)
-                    );
-                    const downloadAnchor = document.createElement('a');
-                    downloadAnchor.setAttribute("href", dataStr);
-                    downloadAnchor.setAttribute("download", this.project.name + ".brainjson");
-                    document.body.appendChild(downloadAnchor);
-                    downloadAnchor.click();
-                    downloadAnchor.remove();
-                },
-                
-                loadProject() {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = '.brainjson';
-                    input.onchange = e => {
-                        const file = e.target.files[0];
+                // Methods
+                handleImageUpload(event) {
+                    const files = event.target.files;
+                    for (let file of files) {
                         const reader = new FileReader();
-                        reader.onload = event => {
-                            this.project = JSON.parse(event.target.result);
-                            this.updateTestInputs();
+                        reader.onload = (e) => {
+                            this.images.push({
+                                url: e.target.result,
+                                label: '',
+                                file: file
+                            });
                         };
-                        reader.readAsText(file);
-                    };
-                    input.click();
+                        reader.readAsDataURL(file);
+                    }
+                    event.target.value = '';
                 },
                 
-                addLayer(type) {
-                    const layer = {
-                        id: Date.now(),
-                        type: type,
-                        neurons: type === 'input' ? 2 : 3,
-                        activation: type === 'output' ? 'sigmoid' : 'relu'
-                    };
-                    this.project.layers.push(layer);
-                    this.selectedLayer = layer;
+                startWebcam() {
+                    alert('Webcam functionality would be implemented here');
+                    // Actual implementation would use navigator.mediaDevices.getUserMedia
                 },
                 
-                removeLayer(layer) {
-                    this.project.layers = this.project.layers.filter(l => l.id !== layer.id);
-                    this.selectedLayer = null;
-                },
-                
-                dragStart(event, layer) {
-                    this.draggedLayer = layer;
-                    event.dataTransfer.setData('text/plain', '');
-                },
-                
-                handleDrop(event) {
-                    if (this.draggedLayer) {
-                        const rect = event.target.getBoundingClientRect();
-                        const y = event.clientY - rect.top;
-                        
-                        const layerHeight = 60;
-                        const newIndex = Math.min(Math.floor(y / layerHeight), this.project.layers.length - 1);
-                        
-                        const oldIndex = this.project.layers.findIndex(l => l.id === this.draggedLayer.id);
-                        if (oldIndex !== -1 && oldIndex !== newIndex) {
-                            const layer = this.project.layers.splice(oldIndex, 1)[0];
-                            this.project.layers.splice(newIndex, 0, layer);
-                        }
-                        
-                        this.draggedLayer = null;
+                addClass() {
+                    if (this.newClassName.trim() && !this.classes.includes(this.newClassName.trim())) {
+                        this.classes.push(this.newClassName.trim());
+                        this.newClassName = '';
                     }
                 },
                 
-                loadData(event) {
-                    const file = event.target.files[0];
-                    if (!file) return;
-                    
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const content = e.target.result;
-                        
-                        if (file.name.endsWith('.csv')) {
-                            this.parseCSV(content);
-                        } else if (file.name.endsWith('.json')) {
-                            this.project.data = JSON.parse(content);
+                removeClass(index) {
+                    this.classes.splice(index, 1);
+                    // Also remove this class from any images
+                    this.images.forEach(image => {
+                        if (image.label === this.classes[index]) {
+                            image.label = '';
                         }
-                        this.updateTestInputs();
-                    };
-                    reader.readAsText(file);
-                },
-                
-                parseCSV(csvText) {
-                    const lines = csvText.split('\n').filter(line => line.trim());
-                    const headers = lines[0].split(',').map(h => h.trim());
-                    
-                    this.project.data = lines.slice(1).map(line => {
-                        const values = line.split(',').map(v => v.trim());
-                        const row = {};
-                        headers.forEach((header, index) => {
-                            // Улучшенный парсинг чисел
-                            const value = values[index];
-                            row[header] = isNaN(value) || value === '' ? value : parseFloat(value);
-                        });
-                        return row;
                     });
                 },
                 
-                updateColumnType(columnName, type) {
-                    console.log(`Column ${columnName} set to ${type}`);
-                    // В реальном приложении здесь бы сохранялась информация о типах столбцов
+                updateImageLabel(index, label) {
+                    this.images[index].label = label;
                 },
                 
-                preprocessData() {
-                    if (this.project.data.length > 0) {
-                        this.project.normalization = {};
-                        const numericColumns = Object.keys(this.project.data[0]).filter(key => 
-                            typeof this.project.data[0][key] === 'number'
-                        );
-                        
-                        numericColumns.forEach(column => {
-                            const values = this.project.data.map(row => row[column]);
-                            const min = Math.min(...values);
-                            const max = Math.max(...values);
-                            
-                            this.project.normalization[column] = { min, max };
-                            
-                            if (max !== min) {
-                                this.project.data.forEach(row => {
-                                    row[column] = (row[column] - min) / (max - min);
-                                });
-                            }
-                        });
-                        
-                        alert('Данные нормализованы');
-                    }
+                initializePretrainedModel() {
+                    alert(`Initializing ${this.selectedPretrainedModel} with ${this.numClasses} classes`);
+                    // Actual implementation would use ml5.js to initialize the model
                 },
                 
-                async startTraining() {
-                    if (this.project.layers.length < 2) {
-                        alert('Добавьте как минимум входной и выходной слои');
-                        return;
-                    }
-                    
-                    if (this.project.data.length === 0) {
-                        alert('Загрузите данные для обучения');
-                        return;
-                    }
-                    
+                addLayerToModel(layer) {
+                    this.modelLayers.push({ ...layer });
+                },
+                
+                removeLayer(index) {
+                    this.modelLayers.splice(index, 1);
+                },
+                
+                configureLayer(index) {
+                    alert(`Configuring layer: ${this.modelLayers[index].name}`);
+                    // Actual implementation would show a configuration modal
+                },
+                
+                get canStartTraining() {
+                    return this.images.length > 0 && 
+                           this.classes.length >= 2 && 
+                           this.modelLayers.length > 0;
+                },
+                
+                startTraining() {
                     this.isTraining = true;
-                    this.project.status = 'Обучается';
-                    this.trainingStats.errorHistory = [];
+                    this.trainingProgress = 0;
+                    this.currentEpoch = 0;
                     
-                    const networkConfig = {
-                        hiddenLayers: this.project.layers
-                            .filter(layer => layer.type === 'hidden')
-                            .map(layer => layer.neurons),
-                        activation: this.project.layers.find(layer => layer.type === 'output')?.activation || 'sigmoid'
-                    };
-                    
-                    // Исправлено: правильное создание нейросети
-                    this.project.network = new brain.NeuralNetwork();
-                    
-                    const trainingData = this.prepareTrainingData();
-                    
-                    try {
-                        // Исправлено: правильное обучение с обновлением статистики
-                        const trainConfig = {
-                            ...this.trainingConfig,
-                            callback: (stats) => {
-                                this.trainingStats.currentIteration = stats.iterations;
-                                this.trainingStats.currentError = stats.error;
-                                this.trainingStats.errorHistory.push(stats.error);
-                                this.updateErrorChart();
-                                
-                                if (stats.iterations >= this.trainingConfig.iterations || stats.error <= this.trainingConfig.errorThresh) {
-                                    this.isTraining = false;
-                                    this.project.status = 'Обучена';
-                                }
-                            },
-                            callbackPeriod: this.trainingConfig.logPeriod
-                        };
-                        
-                        this.project.network.train(trainingData, trainConfig);
-                        
-                    } catch (error) {
-                        console.error('Training error:', error);
-                        alert('Ошибка при обучении: ' + error.message);
-                        this.isTraining = false;
-                        this.project.status = 'Ошибка';
-                    }
-                },
-                
-                prepareTrainingData() {
-                    if (this.project.data.length === 0) return [];
-                    
-                    const keys = Object.keys(this.project.data[0]);
-                    // Исправлено: более надежное определение входов и выходов
-                    const inputKeys = keys.filter(key => 
-                        typeof this.project.data[0][key] === 'number' && 
-                        key !== keys[keys.length - 1]
-                    );
-                    const outputKey = keys[keys.length - 1];
-                    
-                    return this.project.data.map(row => ({
-                        input: inputKeys.reduce((obj, key) => {
-                            obj[key] = row[key];
-                            return obj;
-                        }, {}),
-                        output: { [outputKey]: row[outputKey] }
-                    }));
+                    // Simulate training progress
+                    const interval = setInterval(() => {
+                        if (this.trainingProgress < 100) {
+                            this.trainingProgress += 10;
+                            this.currentEpoch = Math.floor(this.trainingProgress / 100 * this.epochs);
+                        } else {
+                            clearInterval(interval);
+                            this.isTraining = false;
+                        }
+                    }, 500);
                 },
                 
                 pauseTraining() {
                     this.isTraining = false;
-                    this.project.status = 'На паузе';
+                    // Implementation would pause the actual training process
                 },
                 
                 stopTraining() {
                     this.isTraining = false;
-                    this.project.status = 'Остановлена';
+                    this.trainingProgress = 0;
+                    this.currentEpoch = 0;
+                    // Implementation would stop the actual training process
                 },
                 
-                updateErrorChart() {
-                    const canvas = document.getElementById('errorChart');
-                    if (!canvas) return;
-                    
-                    const ctx = canvas.getContext('2d');
-                    const data = this.trainingStats.errorHistory;
-                    
-                    if (data.length === 0) return;
-                    
-                    // Очистка canvas
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    
-                    // Настройки графика
-                    ctx.beginPath();
-                    ctx.strokeStyle = '#007bff';
-                    ctx.lineWidth = 2;
-                    
-                    const maxError = Math.max(...data);
-                    const minError = Math.min(...data);
-                    const errorRange = maxError - minError || 1;
-                    
-                    // Отрисовка линии
-                    data.forEach((error, index) => {
-                        const x = (index / (data.length - 1)) * canvas.width;
-                        const y = canvas.height - ((error - minError) / errorRange) * canvas.height;
-                        
-                        if (index === 0) {
-                            ctx.moveTo(x, y);
-                        } else {
-                            ctx.lineTo(x, y);
-                        }
-                    });
-                    
-                    ctx.stroke();
-                },
-                
-                updateTestInputs() {
-                    if (this.project.data.length > 0) {
-                        const sample = this.project.data[0];
-                        const inputKeys = Object.keys(sample).filter(key => 
-                            typeof sample[key] === 'number' && 
-                            key !== Object.keys(sample)[Object.keys(sample).length - 1]
-                        );
-                        
-                        this.testInputs = inputKeys.reduce((acc, key) => {
-                            acc[key] = sample[key];
-                            return acc;
-                        }, {});
+                handleTestImageUpload(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        // Simulate prediction
+                        this.testPredictions = [
+                            { label: 'Class A', confidence: 0.85 },
+                            { label: 'Class B', confidence: 0.15 }
+                        ];
                     }
                 },
                 
-                runTest() {
-                    if (this.project.network && Object.keys(this.testInputs).length > 0) {
-                        try {
-                            // Нормализация входных данных для тестирования
-                            const normalizedInputs = {...this.testInputs};
-                            Object.keys(normalizedInputs).forEach(key => {
-                                if (this.project.normalization[key]) {
-                                    const { min, max } = this.project.normalization[key];
-                                    if (max !== min) {
-                                        normalizedInputs[key] = (normalizedInputs[key] - min) / (max - min);
-                                    }
-                                }
-                            });
-                            
-                            this.testResult = this.project.network.run(normalizedInputs);
-                        } catch (error) {
-                            console.error('Test error:', error);
-                            alert('Ошибка при тестировании: ' + error.message);
-                        }
-                    }
+                startTestWebcam() {
+                    alert('Test webcam functionality would be implemented here');
                 },
                 
-                exportModelJSON() {
-                    if (!this.project.network) {
-                        alert('Сначала обучите модель');
-                        return;
-                    }
-                    
-                    const modelData = this.project.network.toJSON();
-                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(
-                        JSON.stringify(modelData, null, 2)
-                    );
-                    this.downloadFile(dataStr, 'model.json');
+                exportModel() {
+                    alert('Model export functionality would be implemented here');
+                    // Implementation would use ml5.js model saving functionality
                 },
                 
-                exportJavaScriptCode() {
-                    if (!this.project.network) {
-                        alert('Сначала обучите модель');
-                        return;
-                    }
-                    
-                    const modelData = this.project.network.toJSON();
-                    
-                    // Добавление информации о нормализации в экспортируемый код
-                    const normalizationCode = this.project.normalization && Object.keys(this.project.normalization).length > 0 
-                        ? `\n// Функция для нормализации входных данных
-function normalizeInput(input) {
-    const normalized = {...input};
-    ${Object.keys(this.project.normalization).map(key => {
-        const { min, max } = this.project.normalization[key];
-        return `if (normalized.${key} !== undefined) {
-        normalized.${key} = (normalized.${key} - ${min}) / (${max} - ${min});
-    }`;
-    }).join('\n    ')}
-    return normalized;
-}`
-                        : '';
-                    
-                    const code = `// Brain.js модель нейронной сети
-const brain = require('brain.js');
-
-// Создание и конфигурация сети
-const net = new brain.NeuralNetwork();
-net.fromJSON(${JSON.stringify(modelData, null, 2)});${normalizationCode}
-
-// Функция для предсказания
-function predict(input) {
-    ${this.project.normalization && Object.keys(this.project.normalization).length > 0 ? 'const normalizedInput = normalizeInput(input);' : 'const normalizedInput = input;'}
-    return net.run(normalizedInput);
-}
-
-// Пример использования
-// const result = predict({ input1: 0.5, input2: 0.3 });
-// console.log(result);
-`;
-
-                    this.exportedCode = code;
+                generateCode() {
+                    this.generatedCode = `// ML5.js Integration Code
+const model = await ml5.imageClassifier('model.json');
+const prediction = await model.classify(document.getElementById('image'));
+console.log(prediction);`;
                 },
                 
-                exportTrainingChart() {
-                    const canvas = document.getElementById('errorChart');
-                    if (!canvas) {
-                        alert('Сначала обучите модель для создания графика');
-                        return;
-                    }
-                    
-                    const link = document.createElement('a');
-                    link.download = 'training-chart.png';
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-                },
-                
-                downloadFile(dataStr, filename) {
-                    const downloadAnchor = document.createElement('a');
-                    downloadAnchor.setAttribute("href", dataStr);
-                    downloadAnchor.setAttribute("download", filename);
-                    document.body.appendChild(downloadAnchor);
-                    downloadAnchor.click();
-                    downloadAnchor.remove();
-                },
-                
-                copyToClipboard() {
-                    if (!this.exportedCode) {
-                        alert('Сначала экспортируйте код');
-                        return;
-                    }
-                    
-                    navigator.clipboard.writeText(this.exportedCode).then(() => {
-                        alert('Код скопирован в буфер обмена');
-                    }).catch(err => {
-                        console.error('Copy failed:', err);
-                        alert('Ошибка при копировании: ' + err.message);
-                    });
+                copyCode() {
+                    navigator.clipboard.writeText(this.generatedCode);
+                    alert('Code copied to clipboard!');
                 }
             };
         }
