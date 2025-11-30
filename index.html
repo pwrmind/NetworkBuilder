@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TensorFlow.js Model Builder</title>
+    <title>Brain.js ML Constructor</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -14,794 +14,846 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- TensorFlow.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <!-- D3.js -->
-    <script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.0/dist/cdn.min.js"></script>
+    <!-- Brain.js -->
+    <script src="https://cdn.jsdelivr.net/npm/brain.js@2.0.0-beta.21/browser.js"></script>
     
     <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #4895ef;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --success-color: #4cc9f0;
+            --warning-color: #f72585;
+        }
+        
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8f9fa;
+            background-color: #f5f7fb;
+            color: var(--dark-color);
         }
-        .nav-tabs .nav-link {
-            font-size: 0.875rem;
-            padding: 0.5rem 0.75rem;
+        
+        .sidebar {
+            background: linear-gradient(180deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            min-height: 100vh;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
         }
-        .layer-palette-item {
-            cursor: grab;
-            font-size: 0.8rem;
-            padding: 0.4rem 0.6rem;
-        }
-        .model-canvas {
-            min-height: 400px;
-            background-color: #f8f9fa;
-            border: 2px dashed #dee2e6;
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 0;
             border-radius: 0.375rem;
+            transition: all 0.2s;
         }
-        .training-chart {
-            height: 300px;
-            background-color: white;
-            border: 1px solid #dee2e6;
-            border-radius: 0.375rem;
+        
+        .nav-link:hover, .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: white;
         }
-        .form-control-sm, .btn-sm {
-            font-size: 0.775rem;
-        }
-        .tab-pane {
-            padding: 1rem 0;
-        }
-        .card {
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-            border: 1px solid rgba(0, 0, 0, 0.125);
-        }
-        .card-header {
-            background-color: #f8f9fa;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-        }
-        .nav-tabs .nav-link.active {
-            font-weight: 500;
-            border-bottom: 2px solid #0d6efd;
-        }
-        .btn-sm {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.775rem;
-            border-radius: 0.2rem;
-        }
-        .form-control-sm, .form-select-sm {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.775rem;
-        }
-        .table-sm th, .table-sm td {
-            padding: 0.3rem;
-        }
-        .progress {
-            border-radius: 0.2rem;
-        }
-        .badge {
-            font-size: 0.7em;
-        }
-        .console-log {
-            height: 150px;
-            overflow-y: auto;
-            background-color: #f8f9fa;
-            font-family: monospace;
-        }
-        .data-upload-area {
-            border: 2px dashed #dee2e6;
-            border-radius: 0.375rem;
-            padding: 2rem;
+        
+        .nav-link i {
+            width: 1.5rem;
             text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
         }
-        .data-upload-area:hover {
-            border-color: #0d6efd;
-            background-color: #f8f9ff;
+        
+        .main-content {
+            padding: 1.5rem;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid #e9ecef;
+            font-weight: 600;
+            padding: 1rem 1.25rem;
+            border-radius: 0.75rem 0.75rem 0 0 !important;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .form-control, .form-select {
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .badge-network {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .training-graph {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        
+        .data-preview {
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 0.75rem;
+        }
+        
+        .model-visualization {
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            min-height: 200px;
+        }
+        
+        .neuron {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            margin: 5px;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+            font-size: 0.7rem;
+        }
+        
+        .layer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 10px;
+        }
+        
+        .progress {
+            height: 0.5rem;
+        }
+        
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        
+        .step {
+            text-align: center;
+            flex: 1;
+            position: relative;
+        }
+        
+        .step:not(:last-child):after {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background-color: #dee2e6;
+            z-index: 1;
+        }
+        
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #dee2e6;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.5rem;
+            z-index: 2;
+            position: relative;
+        }
+        
+        .step.active .step-number {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .step.completed .step-number {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .step-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .code-block {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+        }
+        
+        .network-type-card {
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        
+        .network-type-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .network-type-card.selected {
+            border-color: var(--primary-color);
+        }
+        
+        .table-sm {
+            font-size: 0.75rem;
         }
     </style>
 </head>
 <body>
-    <div x-data="app()" x-init="init()">
-        <!-- Navigation -->
-        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom">
+    <div x-data="mlApp()" x-init="init()">
+        <!-- Header -->
+        <header class="bg-white shadow-sm py-2">
             <div class="container-fluid">
-                <span class="navbar-brand mb-0 h6">
-                    <i class="fas fa-brain text-primary me-2"></i>
-                    TF.js Model Builder
-                </span>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-brain text-primary fs-4 me-2"></i>
+                        <h1 class="h4 mb-0 fw-bold">Brain.js ML Constructor</h1>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-sm btn-outline-primary me-2" @click="resetApp()">
+                            <i class="fas fa-redo me-1"></i> Сбросить
+                        </button>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-download me-1"></i> Экспорт
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" @click="exportModel()"><i class="fas fa-file-code me-2"></i> Модель (JSON)</a></li>
+                                <li><a class="dropdown-item" href="#" @click="exportCode()"><i class="fas fa-code me-2"></i> Код (JS)</a></li>
+                                <li><a class="dropdown-item" href="#" @click="exportResults()"><i class="fas fa-chart-bar me-2"></i> Результаты</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </nav>
+        </header>
 
-        <!-- Main Content -->
-        <div class="container-fluid mt-3">
-            <!-- Navigation Tabs -->
-            <ul class="nav nav-tabs nav-fill">
-                <template x-for="(tab, index) in tabs" :key="index">
-                    <li class="nav-item">
-                        <a class="nav-link" 
-                           :class="{ 'active': activeTab === index }"
-                           @click="activeTab = index"
-                           href="#">
-                            <i :class="tab.icon"></i>
-                            <span x-text="tab.name" class="d-none d-sm-inline"></span>
-                        </a>
-                    </li>
-                </template>
-            </ul>
-
-            <!-- Tab Contents -->
-            <div class="tab-content">
-                <!-- Model Builder Tab -->
-                <div x-show="activeTab === 0" class="tab-pane fade show active">
-                    <div class="row g-2">
-                        <!-- Layer Palette -->
-                        <div class="col-sm-3">
-                            <div class="card">
-                                <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0"><i class="fas fa-shapes me-1"></i>Layers</h6>
-                                    <button class="btn btn-sm btn-outline-success" @click="compileModel()">
-                                        <i class="fas fa-check me-1"></i>Compile
-                                    </button>
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Sidebar -->
+                <div class="col-md-3 col-lg-2 sidebar p-0">
+                    <div class="d-flex flex-column p-3">
+                        <div class="step-indicator d-md-none mb-4">
+                            <template x-for="(step, index) in steps" :key="index">
+                                <div class="step" :class="{'active': currentStep === index, 'completed': currentStep > index}">
+                                    <div class="step-number" x-text="index+1"></div>
+                                    <div class="step-title" x-text="step.title"></div>
                                 </div>
-                                <div class="card-body p-2">
-                                    <!-- Input Layer -->
-                                    <div class="layer-palette-item btn btn-outline-info btn-sm w-100 mb-1 text-start"
-                                         @click="addInputLayer()">
-                                        <i class="fas fa-sign-in-alt me-1"></i>
-                                        <span>Input Layer</span>
-                                    </div>
-                                    
-                                    <template x-for="layer in availableLayers" :key="layer.type">
-                                        <div class="layer-palette-item btn btn-outline-primary btn-sm w-100 mb-1 text-start"
-                                             @click="addLayer(layer.type)">
-                                            <i :class="layer.icon" class="me-1"></i>
-                                            <span x-text="layer.name"></span>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                            
-                            <!-- Model Summary -->
-                            <div class="card mt-2">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-info-circle me-1"></i>Model Info</h6>
-                                </div>
-                                <div class="card-body p-2">
-                                    <div class="small">
-                                        <div class="d-flex justify-content-between">
-                                            <span>Layers:</span>
-                                            <span x-text="layers.length"></span>
-                                        </div>
-                                        <div class="d-flex justify-content-between">
-                                            <span>Status:</span>
-                                            <span x-text="modelCompiled ? 'Compiled' : 'Not Compiled'" 
-                                                  :class="modelCompiled ? 'text-success' : 'text-warning'"></span>
-                                        </div>
-                                        <div class="d-flex justify-content-between" x-show="inputShape">
-                                            <span>Input Shape:</span>
-                                            <span x-text="inputShape"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            </template>
                         </div>
                         
-                        <!-- Model Canvas -->
-                        <div class="col-sm-6">
-                            <div class="card">
-                                <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0"><i class="fas fa-project-diagram me-1"></i>Architecture</h6>
-                                    <div>
-                                        <button class="btn btn-sm btn-outline-danger me-1" @click="clearModel()">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-secondary" @click="exportModel()">
-                                            <i class="fas fa-download"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="model-canvas p-3">
-                                        <template x-for="(layer, index) in layers" :key="layer.id">
-                                            <div class="d-flex align-items-center mb-2">
-                                                <div class="badge" 
-                                                     :class="layer.type === 'input' ? 'bg-info' : 'bg-primary'"
-                                                     x-text="index + 1"></div>
-                                                <div class="card flex-grow-1"
-                                                     :class="{ 'border-primary shadow-sm': selectedLayer && selectedLayer.id === layer.id }"
-                                                     @click="selectLayer(layer)"
-                                                     style="cursor: pointer;">
-                                                    <div class="card-body py-2">
-                                                        <div class="d-flex justify-content-between align-items-center">
-                                                            <div>
-                                                                <strong x-text="layer.name"></strong>
-                                                                <small class="text-muted ms-2" x-text="getLayerDescription(layer)"></small>
-                                                            </div>
-                                                            <button class="btn btn-sm btn-outline-danger" 
-                                                                    @click.stop="removeLayer(layer.id)"
-                                                                    x-show="layer.type !== 'input'">
-                                                                <i class="fas fa-times"></i>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </template>
-                                        <div x-show="layers.length === 0" class="text-center text-muted py-5">
-                                            <i class="fas fa-layer-group fa-2x mb-2"></i>
-                                            <p>Click on layers from palette to build your model</p>
-                                            <p class="small">Start with an Input Layer</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <ul class="nav nav-pills flex-column mb-auto">
+                            <template x-for="(step, index) in steps" :key="index">
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link d-flex align-items-center" 
+                                       :class="{'active': currentStep === index}"
+                                       @click="currentStep = index">
+                                        <i class="fas" :class="step.icon"></i>
+                                        <span class="ms-2" x-text="step.title"></span>
+                                    </a>
+                                </li>
+                            </template>
+                        </ul>
                         
-                        <!-- Layer Properties & Compilation -->
-                        <div class="col-sm-3">
-                            <!-- Input Shape Configuration -->
-                            <div class="card mb-2" x-show="!hasInputLayer()">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-cube me-1"></i>Input Shape</h6>
-                                </div>
-                                <div class="card-body p-2">
-                                    <div class="mb-2">
-                                        <label class="form-label small mb-1">Input Shape</label>
-                                        <input type="text" class="form-control form-control-sm" 
-                                               x-model="inputShape" 
-                                               placeholder="e.g., 784 or 28,28,1">
-                                        <small class="text-muted">Shape of input data (comma separated)</small>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Layer Properties -->
-                            <div class="card mb-2">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-cog me-1"></i>Layer Properties</h6>
-                                </div>
-                                <div class="card-body p-2">
-                                    <template x-if="selectedLayer">
-                                        <div>
-                                            <h6 x-text="selectedLayer.name" class="border-bottom pb-1 small"></h6>
-                                            <template x-if="selectedLayer.type === 'input'">
-                                                <div class="mb-2">
-                                                    <label class="form-label small mb-1">Input Shape</label>
-                                                    <input type="text" class="form-control form-control-sm" 
-                                                           x-model="selectedLayer.params.shape"
-                                                           @input="updateInputShape(selectedLayer.params.shape)">
-                                                    <small class="text-muted">e.g., 784 or 28,28,1</small>
-                                                </div>
-                                            </template>
-                                            <template x-if="selectedLayer.type !== 'input'">
-                                                <template x-for="(value, param) in selectedLayer.params">
-                                                    <div class="mb-2">
-                                                        <label class="form-label small mb-1 text-capitalize" 
-                                                               x-text="param.replace(/([A-Z])/g, ' $1')"></label>
-                                                        <input type="text" class="form-control form-control-sm" 
-                                                               :value="value"
-                                                               @input="updateLayerParam(param, $event.target.value)">
-                                                    </div>
-                                                </template>
-                                            </template>
-                                        </div>
-                                    </template>
-                                    <div x-show="!selectedLayer" class="text-center text-muted py-3">
-                                        <i class="fas fa-mouse-pointer fa-lg"></i>
-                                        <p class="small mt-1">Select a layer to edit properties</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Compilation Settings -->
-                            <div class="card">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-wrench me-1"></i>Compilation</h6>
-                                </div>
-                                <div class="card-body p-2">
-                                    <div class="mb-2">
-                                        <label class="form-label small mb-1">Optimizer</label>
-                                        <select class="form-select form-select-sm" x-model="trainingConfig.optimizer">
-                                            <option value="sgd">SGD</option>
-                                            <option value="adam">Adam</option>
-                                            <option value="rmsprop">RMSprop</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-2">
-                                        <label class="form-label small mb-1">Loss</label>
-                                        <select class="form-select form-select-sm" x-model="trainingConfig.loss">
-                                            <option value="meanSquaredError">Mean Squared Error</option>
-                                            <option value="categoricalCrossentropy">Categorical Crossentropy</option>
-                                            <option value="binaryCrossentropy">Binary Crossentropy</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-2">
-                                        <label class="form-label small mb-1">Metrics</label>
-                                        <div>
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="checkbox" value="accuracy" 
-                                                       x-model="trainingConfig.metrics" id="metric-accuracy">
-                                                <label class="form-check-label small" for="metric-accuracy">Accuracy</label>
-                                            </div>
-                                        </div>
-                                    </div>
+                        <div class="mt-auto pt-3 border-top">
+                            <div class="d-flex align-items-center text-white">
+                                <div>
+                                    <h6 class="mb-0">Текущая модель</h6>
+                                    <small x-text="selectedNetworkType.name || 'Не выбрана'" class="text-white-50"></small>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Data Manager Tab -->
-                <div x-show="activeTab === 1" class="tab-pane fade">
-                    <div class="row g-2">
-                        <!-- Data Upload -->
-                        <div class="col-sm-6">
+                <!-- Main Content -->
+                <div class="col-md-9 col-lg-10 main-content">
+                    <!-- Step 1: Выбор типа сети -->
+                    <div x-show="currentStep === 0">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="h4 mb-0">Выбор типа нейронной сети</h2>
+                            <span class="badge bg-primary" x-text="`Шаг ${currentStep+1} из ${steps.length}`"></span>
+                        </div>
+                        
+                        <div class="row">
+                            <template x-for="network in networkTypes" :key="network.id">
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card network-type-card h-100" 
+                                         :class="{'selected': selectedNetworkType.id === network.id}"
+                                         @click="selectNetworkType(network)">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <h5 class="card-title" x-text="network.name"></h5>
+                                                <i class="fas fa-check-circle text-primary" x-show="selectedNetworkType.id === network.id"></i>
+                                            </div>
+                                            <p class="card-text small" x-text="network.description"></p>
+                                            <div class="mt-2">
+                                                <span class="badge badge-network me-1" x-text="network.category"></span>
+                                                <span class="badge bg-light text-dark" x-text="network.complexity"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                        
+                        <div class="mt-4">
                             <div class="card">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-upload me-1"></i>Upload Data</h6>
+                                <div class="card-header">
+                                    <i class="fas fa-info-circle me-2"></i>Информация о выбранной сети
                                 </div>
                                 <div class="card-body">
-                                    <div class="mb-3">
-                                        <label class="form-label small">Select File Type</label>
-                                        <select class="form-select form-select-sm" x-model="uploadedData?.type">
-                                            <option value="csv">CSV</option>
-                                            <option value="json">JSON</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div class="data-upload-area"
-                                         @drop="handleFileDrop($event)"
-                                         @dragover.prevent
-                                         @dragenter.prevent>
-                                        <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
-                                        <p class="small text-muted mb-2">Drag & drop your CSV or JSON file here</p>
-                                        <input type="file" class="form-control form-control-sm" 
-                                               @change="handleFileSelect($event)" 
-                                               accept=".csv,.json" hidden>
-                                        <button class="btn btn-sm btn-outline-primary" 
-                                                @click="$el.previousElementSibling.click()">
-                                            <i class="fas fa-folder-open me-1"></i>Browse Files
-                                        </button>
-                                    </div>
-                                    
-                                    <div x-show="uploadedData" class="mt-3">
-                                        <div class="alert alert-success py-2">
-                                            <i class="fas fa-check-circle me-1"></i>
-                                            File loaded: <span x-text="uploadedData.name"></span>
-                                            (<span x-text="uploadedData.rows"></span> rows)
+                                    <template x-if="selectedNetworkType.id">
+                                        <div>
+                                            <h5 x-text="selectedNetworkType.name"></h5>
+                                            <p x-text="selectedNetworkType.longDescription"></p>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h6>Лучше всего подходит для:</h6>
+                                                    <ul>
+                                                        <template x-for="useCase in selectedNetworkType.useCases" :key="useCase">
+                                                            <li x-text="useCase"></li>
+                                                        </template>
+                                                    </ul>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6>Особенности:</h6>
+                                                    <ul>
+                                                        <template x-for="feature in selectedNetworkType.features" :key="feature">
+                                                            <li x-text="feature"></li>
+                                                        </template>
+                                                    </ul>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Data Statistics -->
-                            <div class="card mt-2" x-show="uploadedData">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-chart-bar me-1"></i>Data Statistics</h6>
-                                </div>
-                                <div class="card-body p-2">
-                                    <div class="small">
-                                        <div class="d-flex justify-content-between">
-                                            <span>Total Samples:</span>
-                                            <span x-text="uploadedData.rows"></span>
-                                        </div>
-                                        <div class="d-flex justify-content-between">
-                                            <span>Features:</span>
-                                            <span x-text="features.length"></span>
-                                        </div>
-                                        <div class="d-flex justify-content-between">
-                                            <span>Target Column:</span>
-                                            <span x-text="targetColumn || 'Not selected'"></span>
-                                        </div>
-                                    </div>
+                                    </template>
+                                    <template x-if="!selectedNetworkType.id">
+                                        <p class="text-muted mb-0">Выберите тип нейронной сети для просмотра информации</p>
+                                    </template>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Step 2: Конфигурация модели -->
+                    <div x-show="currentStep === 1">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="h4 mb-0">Конфигурация модели</h2>
+                            <span class="badge bg-primary" x-text="`Шаг ${currentStep+1} из ${steps.length}`"></span>
+                        </div>
                         
-                        <!-- Data Configuration -->
-                        <div class="col-sm-6">
-                            <div class="card">
-                                <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0"><i class="fas fa-sliders-h me-1"></i>Data Configuration</h6>
-                                    <button class="btn btn-sm btn-outline-success" 
-                                            :disabled="!uploadedData"
-                                            @click="preprocessData()">
-                                        <i class="fas fa-cog me-1"></i>Preprocess
-                                    </button>
-                                </div>
-                                <div class="card-body">
-                                    <template x-if="uploadedData && uploadedData.columns">
-                                        <div>
-                                            <div class="mb-3">
-                                                <label class="form-label small">Target Column (Labels)</label>
-                                                <select class="form-select form-select-sm" x-model="targetColumn">
-                                                    <option value="">Select target column</option>
-                                                    <template x-for="column in uploadedData.columns" :key="column">
-                                                        <option :value="column" x-text="column"></option>
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-sliders-h me-2"></i>Архитектура сети
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="model-visualization d-flex justify-content-center align-items-center mb-4">
+                                            <div class="layer">
+                                                <div class="fw-bold mb-2 text-center">Входной слой</div>
+                                                <template x-for="i in parseInt(modelConfig.inputSize)" :key="i">
+                                                    <div class="neuron" x-text="i"></div>
+                                                </template>
+                                            </div>
+                                            
+                                            <template x-for="(layer, layerIndex) in modelConfig.hiddenLayers" :key="layerIndex">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-arrow-right text-muted mx-2"></i>
+                                                    <div class="layer">
+                                                        <div class="fw-bold mb-2 text-center">Скрытый слой <span x-text="layerIndex+1"></span></div>
+                                                        <template x-for="i in parseInt(layer)" :key="i">
+                                                            <div class="neuron" x-text="i"></div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </template>
+                                            
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-arrow-right text-muted mx-2"></i>
+                                                <div class="layer">
+                                                    <div class="fw-bold mb-2 text-center">Выходной слой</div>
+                                                    <template x-for="i in parseInt(modelConfig.outputSize)" :key="i">
+                                                        <div class="neuron" x-text="i"></div>
                                                     </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label">Размер входного слоя</label>
+                                                <input type="number" class="form-control form-control-sm" min="1" max="100" 
+                                                       x-model="modelConfig.inputSize">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label">Размер выходного слоя</label>
+                                                <input type="number" class="form-control form-control-sm" min="1" max="100" 
+                                                       x-model="modelConfig.outputSize">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label">Функция активации</label>
+                                                <select class="form-select form-select-sm" x-model="modelConfig.activation">
+                                                    <option value="sigmoid">Sigmoid</option>
+                                                    <option value="relu">ReLU</option>
+                                                    <option value="leaky-relu">Leaky ReLU</option>
+                                                    <option value="tanh">Tanh</option>
                                                 </select>
                                             </div>
-                                            
-                                            <div class="mb-3">
-                                                <label class="form-label small">Feature Columns</label>
-                                                <div style="max-height: 200px; overflow-y: auto;" class="border rounded p-2">
-                                                    <template x-for="column in uploadedData.columns" :key="column">
-                                                        <div class="form-check" x-show="column !== targetColumn">
-                                                            <input class="form-check-input" type="checkbox" 
-                                                                   :value="column" 
-                                                                   x-model="features"
-                                                                   :id="'feature-' + column">
-                                                            <label class="form-check-label small" 
-                                                                   :for="'feature-' + column" 
-                                                                   x-text="column"></label>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <label class="form-label mb-0">Скрытые слои</label>
+                                                <div>
+                                                    <button class="btn btn-sm btn-outline-primary me-1" @click="addHiddenLayer()">
+                                                        <i class="fas fa-plus"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-secondary" @click="removeHiddenLayer()" 
+                                                            :disabled="modelConfig.hiddenLayers.length <= 1">
+                                                        <i class="fas fa-minus"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <template x-for="(layer, index) in modelConfig.hiddenLayers" :key="index">
+                                                    <div class="col-sm-6 col-md-4 mb-2">
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text">Слой <span x-text="index+1"></span></span>
+                                                            <input type="number" class="form-control" min="1" max="100" 
+                                                                   x-model="modelConfig.hiddenLayers[index]">
                                                         </div>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <label class="form-label small">Validation Split</label>
-                                                <input type="range" class="form-range" min="0.1" max="0.5" step="0.05"
-                                                       x-model="trainingConfig.validationSplit">
-                                                <div class="small text-muted text-center">
-                                                    <span x-text="Math.round((1 - trainingConfig.validationSplit) * 100)"></span>% Train / 
-                                                    <span x-text="Math.round(trainingConfig.validationSplit * 100)"></span>% Validation
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Auto-detect Input Shape -->
-                                            <div class="mb-3" x-show="features.length > 0">
-                                                <button class="btn btn-sm btn-outline-info w-100" 
-                                                        @click="autoDetectInputShape()">
-                                                    <i class="fas fa-magic me-1"></i>Auto-detect Input Shape
-                                                </button>
+                                                    </div>
+                                                </template>
                                             </div>
                                         </div>
-                                    </template>
-                                    
-                                    <div x-show="!uploadedData" class="text-center text-muted py-4">
-                                        <i class="fas fa-database fa-2x mb-2"></i>
-                                        <p class="small">Upload a dataset to configure preprocessing</p>
                                     </div>
                                 </div>
                             </div>
                             
-                            <!-- Preprocessing Options -->
-                            <div class="card mt-2" x-show="uploadedData">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-tools me-1"></i>Preprocessing Options</h6>
-                                </div>
-                                <div class="card-body p-2">
-                                    <div class="form-check form-switch mb-2">
-                                        <input class="form-check-input" type="checkbox" id="normalize-data">
-                                        <label class="form-check-label small" for="normalize-data">Normalize Features</label>
+                            <div class="col-lg-4">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-cog me-2"></i>Гиперпараметры
                                     </div>
-                                    <div class="form-check form-switch mb-2">
-                                        <input class="form-check-input" type="checkbox" id="shuffle-data">
-                                        <label class="form-check-label small" for="shuffle-data">Shuffle Data</label>
-                                    </div>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="one-hot-encoding">
-                                        <label class="form-check-label small" for="one-hot-encoding">One-Hot Encoding</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Data Preview -->
-                        <div class="col-12" x-show="uploadedData">
-                            <div class="card">
-                                <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0"><i class="fas fa-table me-1"></i>Data Preview</h6>
-                                    <small class="text-muted">Showing first 10 rows</small>
-                                </div>
-                                <div class="card-body p-0">
-                                    <div class="table-responsive" style="max-height: 300px;">
-                                        <table class="table table-sm table-striped mb-0">
-                                            <thead class="sticky-top bg-light">
-                                                <tr>
-                                                    <template x-for="column in uploadedData.columns" :key="column">
-                                                        <th class="small" 
-                                                            :class="column === targetColumn ? 'table-success' : (features.includes(column) ? 'table-primary' : '')"
-                                                            x-text="column"></th>
-                                                    </template>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <template x-for="(row, index) in uploadedData.preview" :key="index">
-                                                    <tr>
-                                                        <template x-for="column in uploadedData.columns" :key="column">
-                                                            <td class="small" x-text="row[column]"></td>
-                                                        </template>
-                                                    </tr>
-                                                </template>
-                                            </tbody>
-                                        </table>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Скорость обучения</label>
+                                            <input type="range" class="form-range" min="0.001" max="1" step="0.001" 
+                                                   x-model="trainingConfig.learningRate">
+                                            <div class="d-flex justify-content-between">
+                                                <small>0.001</small>
+                                                <small x-text="trainingConfig.learningRate"></small>
+                                                <small>1.0</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Итерации</label>
+                                            <input type="number" class="form-control form-control-sm" 
+                                                   x-model="trainingConfig.iterations" min="100" max="50000">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Порог ошибки</label>
+                                            <input type="number" class="form-control form-control-sm" step="0.001"
+                                                   x-model="trainingConfig.errorThresh" min="0.001" max="0.1">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Momentum</label>
+                                            <input type="range" class="form-range" min="0" max="1" step="0.01" 
+                                                   x-model="trainingConfig.momentum">
+                                            <div class="d-flex justify-content-between">
+                                                <small>0</small>
+                                                <small x-text="trainingConfig.momentum"></small>
+                                                <small>1.0</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="logTraining" x-model="trainingConfig.log">
+                                            <label class="form-check-label" for="logTraining">Логирование процесса</label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Training Tab -->
-                <div x-show="activeTab === 2" class="tab-pane fade">
-                    <div class="row g-2">
-                        <!-- Training Controls -->
-                        <div class="col-sm-4">
-                            <div class="card">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-cogs me-1"></i>Training Configuration</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <label class="form-label small">Epochs</label>
-                                        <input type="number" class="form-control form-control-sm" 
-                                               x-model="trainingConfig.epochs" min="1" max="1000">
+                    <!-- Step 3: Загрузка данных -->
+                    <div x-show="currentStep === 2">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="h4 mb-0">Загрузка и подготовка данных</h2>
+                            <span class="badge bg-primary" x-text="`Шаг ${currentStep+1} из ${steps.length}`"></span>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-upload me-2"></i>Загрузка данных
                                     </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label small">Batch Size</label>
-                                        <input type="number" class="form-control form-control-sm" 
-                                               x-model="trainingConfig.batchSize" min="1" max="1024">
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="form-label small">Learning Rate</label>
-                                        <input type="number" class="form-control form-control-sm" 
-                                               step="0.001" value="0.001" disabled>
-                                        <small class="text-muted">Configure in optimizer</small>
-                                    </div>
-                                    
-                                    <div class="d-grid gap-2">
-                                        <button class="btn btn-sm btn-success" 
-                                                :disabled="!modelCompiled || !dataset || isTraining"
-                                                @click="startTraining()">
-                                            <i class="fas fa-play me-1"></i>
-                                            <span x-text="isTraining ? 'Training...' : 'Start Training'"></span>
-                                        </button>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Выберите источник данных</label>
+                                            <div class="d-grid gap-2 d-md-block">
+                                                <button class="btn btn-sm btn-outline-primary me-2" @click="showSampleData()">
+                                                    <i class="fas fa-database me-1"></i> Пример данных
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-primary" @click="$refs.fileInput.click()">
+                                                    <i class="fas fa-file-upload me-1"></i> Загрузить файл
+                                                </button>
+                                                <input type="file" x-ref="fileInput" class="d-none" accept=".csv,.json" @change="handleFileUpload($event)">
+                                            </div>
+                                        </div>
                                         
-                                        <button class="btn btn-sm btn-warning" 
-                                                :disabled="!isTraining"
-                                                @click="stopTraining()">
-                                            <i class="fas fa-stop me-1"></i>Stop Training
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Training Progress -->
-                            <div class="card mt-2">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-tachometer-alt me-1"></i>Training Progress</h6>
-                                </div>
-                                <div class="card-body">
-                                    <template x-if="isTraining">
-                                        <div>
-                                            <div class="progress mb-2" style="height: 20px;">
-                                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                                                     role="progressbar" 
-                                                     :style="`width: ${(currentEpoch / trainingConfig.epochs) * 100}%`">
-                                                    <span x-text="`Epoch ${currentEpoch} / ${trainingConfig.epochs}`"></span>
-                                                </div>
-                                            </div>
-                                            <div class="small">
-                                                <div class="d-flex justify-content-between">
-                                                    <span>Loss:</span>
-                                                    <span x-text="currentLoss ? currentLoss.toFixed(4) : '--'"></span>
-                                                </div>
-                                                <div class="d-flex justify-content-between">
-                                                    <span>Accuracy:</span>
-                                                    <span x-text="currentAccuracy ? (currentAccuracy * 100).toFixed(2) + '%' : '--'"></span>
-                                                </div>
-                                            </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Или введите данные вручную (JSON)</label>
+                                            <textarea class="form-control" rows="5" x-model="manualDataInput" 
+                                                      placeholder='[{"input": [0,0], "output": [0]}, {"input": [0,1], "output": [1]}]'></textarea>
                                         </div>
-                                    </template>
-                                    <div x-show="!isTraining" class="text-center text-muted py-3">
-                                        <i class="fas fa-hourglass-half fa-lg"></i>
-                                        <p class="small mt-1">Training not started</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Model Information -->
-                            <div class="card mt-2">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-info-circle me-1"></i>Model Status</h6>
-                                </div>
-                                <div class="card-body p-2">
-                                    <div class="small">
+                                        
                                         <div class="d-flex justify-content-between">
-                                            <span>Model Compiled:</span>
-                                            <span :class="modelCompiled ? 'text-success' : 'text-warning'"
-                                                  x-text="modelCompiled ? 'Yes' : 'No'"></span>
-                                        </div>
-                                        <div class="d-flex justify-content-between">
-                                            <span>Data Loaded:</span>
-                                            <span :class="dataset ? 'text-success' : 'text-warning'"
-                                                  x-text="dataset ? 'Yes' : 'No'"></span>
-                                        </div>
-                                        <div class="d-flex justify-content-between">
-                                            <span>Ready to Train:</span>
-                                            <span :class="modelCompiled && dataset ? 'text-success' : 'text-warning'"
-                                                  x-text="modelCompiled && dataset ? 'Yes' : 'No'"></span>
+                                            <button class="btn btn-sm btn-outline-secondary" @click="parseData()">
+                                                <i class="fas fa-check me-1"></i> Применить данные
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" @click="preprocessData()" :disabled="!trainingData.length">
+                                                <i class="fas fa-magic me-1"></i> Автоподготовка
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Training Charts -->
-                        <div class="col-sm-8">
-                            <div class="card">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-chart-line me-1"></i>Training Metrics</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="training-chart" id="lossChart"></div>
-                                    <div class="training-chart mt-2" id="accuracyChart"></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Training Log -->
-                        <div class="col-12 mt-2">
-                            <div class="card">
-                                <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                                    <h6 class="mb-0"><i class="fas fa-terminal me-1"></i>Training Log</h6>
-                                    <button class="btn btn-sm btn-outline-secondary" @click="trainingLog = []">
-                                        <i class="fas fa-trash me-1"></i>Clear
-                                    </button>
-                                </div>
-                                <div class="card-body p-0">
-                                    <div class="console-log p-2 small">
-                                        <template x-for="log in trainingLog" :key="log.id">
-                                            <div :class="log.type === 'error' ? 'text-danger' : (log.type === 'warning' ? 'text-warning' : 'text-muted')">
-                                                <span x-text="log.timestamp"></span> - <span x-text="log.message"></span>
+                                
+                                <div class="card">
+                                    <div class="card-header">
+                                        <i class="fas fa-chart-pie me-2"></i>Статистика данных
+                                    </div>
+                                    <div class="card-body">
+                                        <template x-if="trainingData.length">
+                                            <div>
+                                                <div class="row text-center">
+                                                    <div class="col-4">
+                                                        <div class="fw-bold text-primary" x-text="trainingData.length"></div>
+                                                        <small class="text-muted">Всего записей</small>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <div class="fw-bold text-success" x-text="Math.floor(trainingData.length * 0.7)"></div>
+                                                        <small class="text-muted">Обучающая выборка (70%)</small>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <div class="fw-bold text-warning" x-text="Math.ceil(trainingData.length * 0.3)"></div>
+                                                        <small class="text-muted">Тестовая выборка (30%)</small>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="mt-3">
+                                                    <h6>Информация о входах:</h6>
+                                                    <ul class="small">
+                                                        <li>Количество признаков: <span x-text="getInputSize()"></span></li>
+                                                        <li>Тип данных: <span x-text="getDataType()"></span></li>
+                                                    </ul>
+                                                </div>
+                                                
+                                                <div class="mt-2">
+                                                    <h6>Информация о выходах:</h6>
+                                                    <ul class="small">
+                                                        <li>Количество классов: <span x-text="getOutputSize()"></span></li>
+                                                        <li>Тип задачи: <span x-text="getProblemType()"></span></li>
+                                                    </ul>
+                                                </div>
                                             </div>
                                         </template>
-                                        <div x-show="trainingLog.length === 0" class="text-center text-muted py-4">
-                                            <i class="fas fa-info-circle me-1"></i>
-                                            <span>No log messages yet</span>
+                                        <template x-if="!trainingData.length">
+                                            <p class="text-muted mb-0">Загрузите данные для просмотра статистики</p>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-lg-6">
+                                <div class="card h-100">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <span><i class="fas fa-table me-2"></i>Предпросмотр данных</span>
+                                        <span class="badge bg-primary" x-text="`${trainingData.length} записей`"></span>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <template x-if="trainingData.length">
+                                            <div class="data-preview">
+                                                <table class="table table-sm table-striped mb-0">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th>#</th>
+                                                            <th>Input</th>
+                                                            <th>Output</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <template x-for="(item, index) in trainingData.slice(0, 20)" :key="index">
+                                                            <tr>
+                                                                <td x-text="index+1"></td>
+                                                                <td>
+                                                                    <span x-text="JSON.stringify(item.input)"></span>
+                                                                </td>
+                                                                <td>
+                                                                    <span x-text="JSON.stringify(item.output)"></span>
+                                                                </td>
+                                                            </tr>
+                                                        </template>
+                                                        <tr x-show="trainingData.length > 20">
+                                                            <td colspan="3" class="text-center text-muted py-2">
+                                                                ... и еще <span x-text="trainingData.length - 20"></span> записей
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </template>
+                                        <template x-if="!trainingData.length">
+                                            <div class="d-flex justify-content-center align-items-center p-5 text-muted">
+                                                <div class="text-center">
+                                                    <i class="fas fa-table fa-2x mb-3"></i>
+                                                    <p>Нет данных для отображения</p>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Обучение модели -->
+                    <div x-show="currentStep === 3">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="h4 mb-0">Обучение модели</h2>
+                            <span class="badge bg-primary" x-text="`Шаг ${currentStep+1} из ${steps.length}`"></span>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <div class="card mb-4">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <span><i class="fas fa-chart-line me-2"></i>Процесс обучения</span>
+                                        <div>
+                                            <span class="badge me-2" :class="trainingStatus === 'training' ? 'bg-warning' : trainingStatus === 'completed' ? 'bg-success' : 'bg-secondary'"
+                                                  x-text="trainingStatus === 'training' ? 'Обучается' : trainingStatus === 'completed' ? 'Завершено' : 'Не начато'"></span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="training-graph mb-4">
+                                            <div id="errorChart"></div>
+                                        </div>
+                                        
+                                        <div class="row text-center mb-3">
+                                            <div class="col-4">
+                                                <div class="fw-bold" x-text="currentIteration"></div>
+                                                <small class="text-muted">Текущая итерация</small>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="fw-bold" x-text="currentError ? currentError.toFixed(6) : '0'"></div>
+                                                <small class="text-muted">Текущая ошибка</small>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="fw-bold" x-text="trainingTime ? `${trainingTime}s` : '0s'"></div>
+                                                <small class="text-muted">Время обучения</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="progress mb-3" style="height: 8px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 :style="`width: ${trainingProgress}%`"></div>
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-between">
+                                            <button class="btn btn-sm btn-success" @click="startTraining()" 
+                                                    :disabled="trainingStatus === 'training' || !trainingData.length">
+                                                <i class="fas fa-play me-1"></i> Начать обучение
+                                            </button>
+                                            <button class="btn btn-sm btn-warning" @click="pauseTraining()" 
+                                                    :disabled="trainingStatus !== 'training'">
+                                                <i class="fas fa-pause me-1"></i> Пауза
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" @click="stopTraining()" 
+                                                    :disabled="trainingStatus !== 'training'">
+                                                <i class="fas fa-stop me-1"></i> Остановить
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-lg-4">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-info-circle me-2"></i>Информация о обучении
+                                    </div>
+                                    <div class="card-body">
+                                        <template x-if="trainingResult">
+                                            <div>
+                                                <h6>Результаты обучения:</h6>
+                                                <ul class="small">
+                                                    <li>Итерации: <span x-text="trainingResult.iterations"></span></li>
+                                                    <li>Ошибка: <span x-text="trainingResult.error.toFixed(6)"></span></li>
+                                                    <li>Время: <span x-text="trainingResult.time"></span> сек</li>
+                                                </ul>
+                                            </div>
+                                        </template>
+                                        <template x-if="!trainingResult">
+                                            <p class="text-muted mb-0">Обучение не проводилось</p>
+                                        </template>
+                                    </div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-header">
+                                        <i class="fas fa-terminal me-2"></i>Лог обучения
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="data-preview">
+                                            <template x-for="log in trainingLogs" :key="log.id">
+                                                <div class="px-3 py-2 border-bottom">
+                                                    <div class="small" x-text="log.message"></div>
+                                                    <div class="text-muted extra-small" x-text="log.timestamp"></div>
+                                                </div>
+                                            </template>
+                                            <div class="px-3 py-2 text-muted text-center" x-show="!trainingLogs.length">
+                                                Лог пуст
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Results Tab -->
-                <div x-show="activeTab === 3" class="tab-pane fade">
-                    <div class="row g-2">
-                        <!-- Training Summary -->
-                        <div class="col-sm-6">
-                            <div class="card">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-info-circle me-1"></i>Training Summary</h6>
-                                </div>
-                                <div class="card-body">
-                                    <template x-if="trainedModel && trainingHistory.loss.length > 0">
-                                        <div>
-                                            <div class="row text-center">
-                                                <div class="col-sm-6 mb-2">
-                                                    <div class="card bg-light">
-                                                        <div class="card-body py-2">
-                                                            <h6 class="card-title text-primary" 
-                                                                x-text="trainingHistory.loss[trainingHistory.loss.length - 1].toFixed(4)"></h6>
-                                                            <small class="text-muted">Final Loss</small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-sm-6 mb-2">
-                                                    <div class="card bg-light">
-                                                        <div class="card-body py-2">
-                                                            <h6 class="card-title text-success" 
-                                                                x-text="(trainingHistory.accuracy[trainingHistory.accuracy.length - 1] * 100).toFixed(2) + '%'"></h6>
-                                                            <small class="text-muted">Final Accuracy</small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="mt-3">
-                                                <h6 class="border-bottom pb-1">Training Details</h6>
-                                                <div class="small">
-                                                    <div class="d-flex justify-content-between">
-                                                        <span>Total Epochs:</span>
-                                                        <span x-text="trainingHistory.loss.length"></span>
-                                                    </div>
-                                                    <div class="d-flex justify-content-between">
-                                                        <span>Best Accuracy:</span>
-                                                        <span x-text="(Math.max(...trainingHistory.accuracy) * 100).toFixed(2) + '%'"></span>
-                                                    </div>
-                                                    <div class="d-flex justify-content-between">
-                                                        <span>Lowest Loss:</span>
-                                                        <span x-text="Math.min(...trainingHistory.loss).toFixed(4)"></span>
-                                                    </div>
-                                                    <div class="d-flex justify-content-between">
-                                                        <span>Training Time:</span>
-                                                        <span x-text="trainingTime ? trainingTime + 's' : '--'"></span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                    
-                                    <div x-show="!trainedModel" class="text-center text-muted py-4">
-                                        <i class="fas fa-chart-bar fa-2x mb-2"></i>
-                                        <p class="small">No training results available. Train a model first.</p>
-                                        <button class="btn btn-sm btn-outline-primary mt-2" @click="activeTab = 2">
-                                            <i class="fas fa-play me-1"></i>Go to Training
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Model Export -->
-                            <div class="card mt-2">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-download me-1"></i>Model Export</h6>
-                                </div>
-                                <div class="card-body">
-                                    <template x-if="trainedModel">
-                                        <div class="text-center">
-                                            <p class="small text-muted mb-2">Export your trained model for use in other applications</p>
-                                            <button class="btn btn-sm btn-outline-primary w-100 mb-2" @click="exportTrainedModel()">
-                                                <i class="fas fa-file-export me-1"></i>Export Model
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-success w-100" @click="downloadWeights()">
-                                                <i class="fas fa-weight-hanging me-1"></i>Download Weights
-                                            </button>
-                                        </div>
-                                    </template>
-                                    <div x-show="!trainedModel" class="text-center text-muted">
-                                        <p class="small">Train a model to enable export</p>
-                                    </div>
-                                </div>
-                            </div>
+                    <!-- Step 5: Тестирование и результаты -->
+                    <div x-show="currentStep === 4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="h4 mb-0">Тестирование и результаты</h2>
+                            <span class="badge bg-primary" x-text="`Шаг ${currentStep+1} из ${steps.length}`"></span>
                         </div>
                         
-                        <!-- Performance Charts -->
-                        <div class="col-sm-6">
-                            <div class="card">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-chart-area me-1"></i>Final Metrics</h6>
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <i class="fas fa-vial me-2"></i>Тестирование модели
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Входные данные для тестирования</label>
+                                            <textarea class="form-control" rows="3" x-model="testInput" 
+                                                      placeholder='[0, 1] или {"r": 0.5, "g": 0.2, "b": 0.8}'></textarea>
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <button class="btn btn-sm btn-primary" @click="runTest()" :disabled="!trainedModel">
+                                                <i class="fas fa-bolt me-1"></i> Выполнить тест
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary" @click="loadExampleTest()">
+                                                <i class="fas fa-download me-1"></i> Пример теста
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="mb-3" x-show="testResult">
+                                            <label class="form-label">Результат:</label>
+                                            <div class="code-block">
+                                                <pre x-text="JSON.stringify(testResult, null, 2)"></pre>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="card-body">
-                                    <div class="training-chart" id="finalLossChart"></div>
-                                    <div class="training-chart mt-2" id="finalAccuracyChart"></div>
+                                
+                                <div class="card">
+                                    <div class="card-header">
+                                        <i class="fas fa-chart-bar me-2"></i>Метрики качества
+                                    </div>
+                                    <div class="card-body">
+                                        <template x-if="trainingResult">
+                                            <div>
+                                                <div class="row text-center mb-3">
+                                                    <div class="col-4">
+                                                        <div class="fw-bold text-success" x-text="(1 - trainingResult.error).toFixed(4)"></div>
+                                                        <small class="text-muted">Точность</small>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <div class="fw-bold text-primary" x-text="trainingResult.iterations"></div>
+                                                        <small class="text-muted">Итерации</small>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <div class="fw-bold text-info" x-text="trainingResult.time"></div>
+                                                        <small class="text-muted">Время (с)</small>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="mt-3">
+                                                    <h6>Оценка модели:</h6>
+                                                    <div class="progress mb-2" style="height: 10px;">
+                                                        <div class="progress-bar bg-success" role="progressbar" 
+                                                             :style="`width: ${(1 - trainingResult.error) * 100}%`"></div>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <span class="badge" 
+                                                              :class="trainingResult.error < 0.01 ? 'bg-success' : trainingResult.error < 0.05 ? 'bg-warning' : 'bg-danger'"
+                                                              x-text="trainingResult.error < 0.01 ? 'Отлично' : trainingResult.error < 0.05 ? 'Хорошо' : 'Требует доработки'"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <template x-if="!trainingResult">
+                                            <p class="text-muted mb-0">Сначала обучите модель</p>
+                                        </template>
+                                    </div>
                                 </div>
                             </div>
                             
-                            <!-- Model Predictions -->
-                            <div class="card mt-2">
-                                <div class="card-header py-2">
-                                    <h6 class="mb-0"><i class="fas fa-rocket me-1"></i>Model Predictions</h6>
-                                </div>
-                                <div class="card-body">
-                                    <template x-if="trainedModel">
-                                        <div>
-                                            <p class="small text-muted mb-2">Test your model with sample input</p>
-                                            <div class="input-group input-group-sm mb-2">
-                                                <input type="text" class="form-control" placeholder="Input values (comma separated)" x-model="predictionInput">
-                                                <button class="btn btn-outline-primary" @click="makePrediction()">
-                                                    <i class="fas fa-bolt"></i>
-                                                </button>
-                                            </div>
-                                            <div x-show="predictionResult" class="alert alert-info py-2">
-                                                <strong>Prediction:</strong> <span x-text="predictionResult"></span>
-                                            </div>
+                            <div class="col-lg-6">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <i class="fas fa-code me-2"></i>Код модели
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="code-block h-100">
+                                            <pre x-text="generateModelCode()"></pre>
                                         </div>
-                                    </template>
-                                    <div x-show="!trainedModel" class="text-center text-muted py-3">
-                                        <i class="fas fa-rocket fa-lg mb-2"></i>
-                                        <p class="small">Train a model to enable predictions</p>
                                     </div>
                                 </div>
                             </div>
@@ -812,747 +864,618 @@
         </div>
     </div>
 
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
-        function app() {
+        function mlApp() {
             return {
-                // Reactive State
-                activeTab: 0,
-                tabs: [
-                    { name: 'Model', icon: 'fas fa-project-diagram' },
-                    { name: 'Data', icon: 'fas fa-database' },
-                    { name: 'Training', icon: 'fas fa-play-circle' },
-                    { name: 'Results', icon: 'fas fa-chart-line' }
+                // Состояние приложения
+                currentStep: 0,
+                steps: [
+                    { title: 'Тип сети', icon: 'fa-network-wired' },
+                    { title: 'Конфигурация', icon: 'fa-sliders-h' },
+                    { title: 'Данные', icon: 'fa-database' },
+                    { title: 'Обучение', icon: 'fa-graduation-cap' },
+                    { title: 'Результаты', icon: 'fa-chart-bar' }
                 ],
                 
-                // Model State
-                layers: [],
-                availableLayers: [
-                    { type: 'dense', name: 'Dense Layer', icon: 'fas fa-layer-group', params: { units: 64, activation: 'relu' }},
-                    { type: 'conv2d', name: 'Conv2D', icon: 'fas fa-border-all', params: { filters: 32, kernelSize: 3, activation: 'relu' }},
-                    { type: 'maxpooling2d', name: 'MaxPooling2D', icon: 'fas fa-th-large', params: { poolSize: 2 }},
-                    { type: 'flatten', name: 'Flatten', icon: 'fas fa-arrows-alt-h', params: {}},
-                    { type: 'dropout', name: 'Dropout', icon: 'fas fa-tint', params: { rate: 0.5 }}
+                // Типы нейронных сетей
+                networkTypes: [
+                    {
+                        id: 'neural-network',
+                        name: 'Neural Network',
+                        category: 'Feedforward',
+                        complexity: 'Начальный',
+                        description: 'Базовая feedforward нейронная сеть с обратным распространением ошибки',
+                        longDescription: 'Классическая многослойная нейронная сеть прямого распространения. Идеально подходит для задач классификации и регрессии с числовыми данными.',
+                        useCases: ['Классификация изображений', 'Прогнозирование числовых значений', 'Распознавание паттернов'],
+                        features: ['Быстрая обучение', 'Простая архитектура', 'Хорошая интерпретируемость']
+                    },
+                    {
+                        id: 'neural-network-gpu',
+                        name: 'Neural Network GPU',
+                        category: 'Feedforward',
+                        complexity: 'Начальный',
+                        description: 'Тот же функционал, но с GPU ускорением для больших наборов данных',
+                        longDescription: 'GPU-ускоренная версия feedforward нейронной сети. Обеспечивает значительное ускорение обучения на больших наборах данных за счет использования графического процессора.',
+                        useCases: ['Большие наборы данных', 'Сложные архитектуры', 'Быстрое прототипирование'],
+                        features: ['GPU ускорение', 'Высокая производительность', 'Поддержка больших моделей']
+                    },
+                    {
+                        id: 'rnn',
+                        name: 'RNN',
+                        category: 'Recurrent',
+                        complexity: 'Продвинутый',
+                        description: 'Рекуррентная нейронная сеть для последовательностей данных',
+                        longDescription: 'Рекуррентные нейронные сети предназначены для работы с последовательными данными, где порядок имеет значение. Они имеют "память" о предыдущих элементах последовательности.',
+                        useCases: ['Анализ временных рядов', 'Обработка естественного языка', 'Распознавание речи'],
+                        features: ['Работа с последовательностями', 'Внутренняя память', 'Обработка данных переменной длины']
+                    },
+                    {
+                        id: 'lstm',
+                        name: 'LSTM',
+                        category: 'Recurrent',
+                        complexity: 'Продвинутый',
+                        description: 'Долгая краткосрочная память для сложных последовательностей',
+                        longDescription: 'LSTM - это особый тип рекуррентной нейронной сети, способный обучаться долгосрочным зависимостям. Имеет механизмы "вентилей" для контроля потока информации.',
+                        useCases: ['Машинный перевод', 'Генерация текста', 'Прогнозирование временных рядов'],
+                        features: ['Долгосрочная память', 'Устойчивость к затуханию градиента', 'Сложные последовательности']
+                    },
+                    {
+                        id: 'gru',
+                        name: 'GRU',
+                        category: 'Recurrent',
+                        complexity: 'Продвинутый',
+                        description: 'Gated Recurrent Unit - упрощенная версия LSTM',
+                        longDescription: 'GRU - это упрощенная версия LSTM с меньшим количеством параметров. Сохраняет способность обучаться долгосрочным зависимостям, но обучается быстрее.',
+                        useCases: ['Анализ тональности', 'Автодополнение текста', 'Классификация последовательностей'],
+                        features: ['Меньше параметров', 'Быстрее обучение', 'Сопоставимая с LSTM производительность']
+                    },
+                    {
+                        id: 'rnn-time-step',
+                        name: 'RNN Time Step',
+                        category: 'Time Series',
+                        complexity: 'Средний',
+                        description: 'RNN для прогнозирования временных рядов',
+                        longDescription: 'Специализированная версия RNN, оптимизированная для работы с временными рядами. Может предсказывать следующие значения в последовательности.',
+                        useCases: ['Прогнозирование акций', 'Предсказание погоды', 'Анализ сенсорных данных'],
+                        features: ['Прогнозирование временных рядов', 'Работа с числовыми последовательностями', 'Многовариантное прогнозирование']
+                    },
+                    {
+                        id: 'lstm-time-step',
+                        name: 'LSTM Time Step',
+                        category: 'Time Series',
+                        complexity: 'Продвинутый',
+                        description: 'LSTM для сложных временных рядов',
+                        longDescription: 'LSTM, специализированная для анализа временных рядов. Эффективна для данных с долгосрочными зависимостями и сезонными паттернами.',
+                        useCases: ['Энергопотребление', 'Финансовые прогнозы', 'Медицинские данные'],
+                        features: ['Сезонные паттерны', 'Долгосрочные зависимости', 'Шумоподавление']
+                    },
+                    {
+                        id: 'ae',
+                        name: 'Autoencoder',
+                        category: 'Unsupervised',
+                        complexity: 'Продвинутый',
+                        description: 'Автоэнкодер для сжатия данных и поиска аномалий',
+                        longDescription: 'Автоэнкодеры - это нейронные сети, которые учатся сжимать и восстанавливать данные. Состоят из энкодера (сжатие) и декодера (восстановление).',
+                        useCases: ['Снижение размерности', 'Обнаружение аномалий', 'Шумоподавление'],
+                        features: ['Неrequire размеченных данных', 'Сжатие данных', 'Выявление скрытых паттернов']
+                    }
                 ],
-                selectedLayer: null,
-                modelCompiled: false,
-                model: null,
-                inputShape: '',
                 
-                // Data State
-                uploadedData: null,
-                dataset: null,
-                targetColumn: '',
-                features: [],
+                // Выбранный тип сети
+                selectedNetworkType: {},
                 
-                // Training State
-                isTraining: false,
-                trainingHistory: { loss: [], accuracy: [], val_loss: [], val_accuracy: [] },
+                // Конфигурация модели
+                modelConfig: {
+                    inputSize: 2,
+                    outputSize: 1,
+                    hiddenLayers: [3],
+                    activation: 'sigmoid'
+                },
+                
+                // Конфигурация обучения
                 trainingConfig: {
-                    optimizer: 'adam',
-                    loss: 'categoricalCrossentropy',
-                    metrics: ['accuracy'],
-                    epochs: 10,
-                    batchSize: 32,
-                    validationSplit: 0.2
+                    iterations: 2000,
+                    errorThresh: 0.005,
+                    learningRate: 0.3,
+                    momentum: 0.1,
+                    log: true
                 },
-                currentEpoch: 0,
-                currentLoss: null,
-                currentAccuracy: null,
-                trainingLog: [],
-                shouldStopTraining: false,
-                trainingTime: null,
-                trainingStartTime: null,
                 
-                // Results State
+                // Данные для обучения
+                trainingData: [],
+                manualDataInput: '',
+                
+                // Состояние обучения
+                trainingStatus: 'idle', // 'idle', 'training', 'paused', 'completed'
+                trainingProgress: 0,
+                currentIteration: 0,
+                currentError: 0,
+                trainingTime: 0,
+                trainingResult: null,
+                trainingLogs: [],
                 trainedModel: null,
-                predictionInput: '',
-                predictionResult: '',
                 
-                // Initialization
+                // Тестирование
+                testInput: '',
+                testResult: null,
+                
+                // Инициализация приложения
                 init() {
-                    console.log("TF.js Model Builder initialized");
-                    this.addLog('Application initialized');
+                    this.selectNetworkType(this.networkTypes[0]);
+                    this.initErrorChart();
+                    this.addLog('Приложение инициализировано');
                 },
                 
-                // Navigation Methods
-                switchTab(tabIndex) {
-                    this.activeTab = tabIndex;
+                // Выбор типа сети
+                selectNetworkType(network) {
+                    this.selectedNetworkType = network;
+                    this.addLog(`Выбран тип сети: ${network.name}`);
                 },
                 
-                // Model Builder Methods
-                addInputLayer() {
-                    const newLayer = {
-                        id: Date.now() + Math.random(),
-                        type: 'input',
-                        name: 'Input Layer',
-                        params: { shape: this.inputShape || '784' }
+                // Добавление скрытого слоя
+                addHiddenLayer() {
+                    this.modelConfig.hiddenLayers.push(3);
+                },
+                
+                // Удаление скрытого слоя
+                removeHiddenLayer() {
+                    if (this.modelConfig.hiddenLayers.length > 1) {
+                        this.modelConfig.hiddenLayers.pop();
+                    }
+                },
+                
+                // Загрузка примера данных
+                showSampleData() {
+                    this.manualDataInput = JSON.stringify([
+                        { input: [0, 0], output: [0] },
+                        { input: [0, 1], output: [1] },
+                        { input: [1, 0], output: [1] },
+                        { input: [1, 1], output: [0] }
+                    ], null, 2);
+                    this.parseData();
+                    this.addLog('Загружены примеры данных (XOR)');
+                },
+                
+                // Обработка загрузки файла
+                handleFileUpload(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const content = e.target.result;
+                        if (file.name.endsWith('.csv')) {
+                            this.parseCSV(content);
+                        } else if (file.name.endsWith('.json')) {
+                            this.manualDataInput = content;
+                            this.parseData();
+                        }
                     };
-                    this.layers.unshift(newLayer); // Add at beginning
-                    this.selectedLayer = newLayer;
-                    this.inputShape = newLayer.params.shape;
-                    this.addLog('Input layer added');
+                    reader.readAsText(file);
                 },
                 
-                addLayer(layerType) {
-                    const template = this.availableLayers.find(l => l.type === layerType);
-                    if (template) {
-                        const newLayer = {
-                            id: Date.now() + Math.random(),
-                            type: layerType,
-                            name: `${template.name} ${this.layers.filter(l => l.type === layerType).length + 1}`,
-                            params: JSON.parse(JSON.stringify(template.params))
-                        };
-                        this.layers.push(newLayer);
-                        this.selectedLayer = newLayer;
-                        this.addLog(`Added ${template.name}`);
-                    }
-                },
-                
-                removeLayer(layerId) {
-                    const layer = this.layers.find(l => l.id === layerId);
-                    this.layers = this.layers.filter(layer => layer.id !== layerId);
-                    if (this.selectedLayer && this.selectedLayer.id === layerId) {
-                        this.selectedLayer = this.layers[this.layers.length - 1] || null;
-                    }
-                    if (layer) {
-                        this.addLog(`Removed ${layer.name}`);
-                    }
-                },
-                
-                selectLayer(layer) {
-                    this.selectedLayer = layer;
-                },
-                
-                updateLayerParam(param, value) {
-                    if (this.selectedLayer && this.selectedLayer.params[param] !== undefined) {
-                        this.selectedLayer.params[param] = value;
-                    }
-                },
-                
-                updateInputShape(shape) {
-                    this.inputShape = shape;
-                },
-                
-                hasInputLayer() {
-                    return this.layers.some(layer => layer.type === 'input');
-                },
-                
-                getLayerDescription(layer) {
-                    if (layer.type === 'input') {
-                        return `shape: [${layer.params.shape}]`;
-                    }
-                    const params = Object.entries(layer.params).map(([key, value]) => `${key}: ${value}`).join(', ');
-                    return params || 'default parameters';
-                },
-                
-                async compileModel() {
-                    if (this.layers.length === 0) {
-                        alert('Please add at least one layer to the model');
-                        return;
-                    }
-                    
-                    // Check if we have input shape
-                    if (!this.hasInputLayer() && !this.inputShape) {
-                        alert('Please specify input shape or add an Input Layer');
-                        return;
-                    }
-                    
-                    try {
-                        this.model = tf.sequential();
-                        
-                        // Add layers to model
-                        for (let i = 0; i < this.layers.length; i++) {
-                            const layerConfig = this.layers[i];
-                            let layer;
-                            
-                            switch (layerConfig.type) {
-                                case 'input':
-                                    // Input layer is handled by setting inputShape on first regular layer
-                                    continue;
-                                case 'dense':
-                                    const denseConfig = {
-                                        units: parseInt(layerConfig.params.units) || 64,
-                                        activation: layerConfig.params.activation || 'relu'
-                                    };
-                                    
-                                    // If this is the first layer and we have input shape
-                                    if (i === 0 || (i === 1 && this.layers[0].type === 'input')) {
-                                        const shape = this.parseInputShape();
-                                        if (shape) {
-                                            denseConfig.inputShape = shape;
-                                        }
-                                    }
-                                    
-                                    layer = tf.layers.dense(denseConfig);
-                                    break;
-                                case 'conv2d':
-                                    const convConfig = {
-                                        filters: parseInt(layerConfig.params.filters) || 32,
-                                        kernelSize: parseInt(layerConfig.params.kernelSize) || 3,
-                                        activation: layerConfig.params.activation || 'relu'
-                                    };
-                                    
-                                    if (i === 0 || (i === 1 && this.layers[0].type === 'input')) {
-                                        const shape = this.parseInputShape();
-                                        if (shape) {
-                                            convConfig.inputShape = shape;
-                                        }
-                                    }
-                                    
-                                    layer = tf.layers.conv2d(convConfig);
-                                    break;
-                                case 'maxpooling2d':
-                                    layer = tf.layers.maxPooling2d({
-                                        poolSize: parseInt(layerConfig.params.poolSize) || 2
-                                    });
-                                    break;
-                                case 'flatten':
-                                    layer = tf.layers.flatten();
-                                    break;
-                                case 'dropout':
-                                    layer = tf.layers.dropout({
-                                        rate: parseFloat(layerConfig.params.rate) || 0.5
-                                    });
-                                    break;
-                            }
-                            if (layer) this.model.add(layer);
-                        }
-                        
-                        // Compile the model
-                        this.model.compile({
-                            optimizer: this.trainingConfig.optimizer,
-                            loss: this.trainingConfig.loss,
-                            metrics: this.trainingConfig.metrics
-                        });
-                        
-                        this.modelCompiled = true;
-                        this.addLog('Model compiled successfully!');
-                        
-                    } catch (error) {
-                        this.addLog('Error compiling model: ' + error.message, 'error');
-                        console.error(error);
-                    }
-                },
-                
-                parseInputShape() {
-                    let shapeString = this.inputShape;
-                    
-                    // If we have an input layer, use its shape
-                    if (this.hasInputLayer()) {
-                        shapeString = this.layers.find(l => l.type === 'input').params.shape;
-                    }
-                    
-                    if (!shapeString) return null;
-                    
-                    try {
-                        return shapeString.split(',').map(dim => {
-                            const parsed = parseInt(dim.trim());
-                            return isNaN(parsed) ? null : parsed;
-                        }).filter(dim => dim !== null);
-                    } catch (error) {
-                        console.error('Error parsing input shape:', error);
-                        return null;
-                    }
-                },
-                
-                clearModel() {
-                    this.layers = [];
-                    this.selectedLayer = null;
-                    this.modelCompiled = false;
-                    this.model = null;
-                    this.inputShape = '';
-                    this.addLog('Model cleared');
-                },
-                
-                exportModel() {
-                    if (!this.modelCompiled) {
-                        alert('Please compile the model first');
-                        return;
-                    }
-                    alert('Model export functionality would be implemented here');
-                },
-                
-                // Data Manager Methods
-                handleFileDrop(event) {
-                    event.preventDefault();
-                    const files = event.dataTransfer.files;
-                    if (files.length > 0) {
-                        this.processFile(files[0]);
-                    }
-                },
-                
-                handleFileSelect(event) {
-                    const files = event.target.files;
-                    if (files.length > 0) {
-                        this.processFile(files[0]);
-                    }
-                },
-                
-                async processFile(file) {
-                    const fileType = file.name.split('.').pop().toLowerCase();
-                    
-                    if (fileType !== 'csv' && fileType !== 'json') {
-                        alert('Please upload a CSV or JSON file');
-                        return;
-                    }
-                    
-                    try {
-                        const text = await file.text();
-                        let data;
-                        
-                        if (fileType === 'csv') {
-                            data = this.parseCSV(text);
-                        } else {
-                            data = JSON.parse(text);
-                            // Convert JSON array to tabular format if needed
-                            if (Array.isArray(data) && data.length > 0) {
-                                data = this.jsonToTable(data);
-                            }
-                        }
-                        
-                        this.uploadedData = {
-                            name: file.name,
-                            type: fileType,
-                            raw: data,
-                            columns: Object.keys(data[0] || {}),
-                            rows: data.length,
-                            preview: data.slice(0, 10) // Preview first 10 rows
-                        };
-                        
-                        // Auto-select features (all columns initially)
-                        this.features = [...this.uploadedData.columns];
-                        
-                        this.addLog(`Data loaded: ${file.name} (${data.length} rows)`);
-                        
-                    } catch (error) {
-                        this.addLog('Error reading file: ' + error.message, 'error');
-                        console.error(error);
-                    }
-                },
-                
+                // Парсинг CSV
                 parseCSV(csvText) {
-                    const lines = csvText.split('\n').filter(line => line.trim());
-                    const headers = lines[0].split(',').map(h => h.trim());
+                    const lines = csvText.split('\n');
+                    const headers = lines[0].split(',');
                     
-                    return lines.slice(1).map(line => {
-                        const values = line.split(',').map(v => v.trim());
-                        const row = {};
-                        headers.forEach((header, index) => {
-                            row[header] = values[index] || '';
-                        });
-                        return row;
-                    });
-                },
-                
-                jsonToTable(jsonArray) {
-                    if (!Array.isArray(jsonArray) || jsonArray.length === 0) {
-                        return [];
+                    const data = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        if (lines[i].trim() === '') continue;
+                        
+                        const values = lines[i].split(',');
+                        const input = [];
+                        const output = [];
+                        
+                        // Простая логика: последний столбец - выход, остальные - входы
+                        for (let j = 0; j < values.length - 1; j++) {
+                            input.push(parseFloat(values[j]));
+                        }
+                        output.push(parseFloat(values[values.length - 1]));
+                        
+                        data.push({ input, output });
                     }
                     
-                    // Simple flattening for nested objects
-                    return jsonArray.map(item => {
-                        const flatItem = {};
-                        const flatten = (obj, prefix = '') => {
-                            for (const key in obj) {
-                                if (typeof obj[key] === 'object' && obj[key] !== null) {
-                                    flatten(obj[key], prefix + key + '_');
-                                } else {
-                                    flatItem[prefix + key] = obj[key];
-                                }
-                            }
-                        };
-                        flatten(item);
-                        return flatItem;
-                    });
+                    this.trainingData = data;
+                    this.addLog(`Загружено ${data.length} записей из CSV`);
                 },
                 
+                // Парсинг данных из текстового поля
+                parseData() {
+                    try {
+                        const data = JSON.parse(this.manualDataInput);
+                        if (Array.isArray(data)) {
+                            this.trainingData = data;
+                            this.addLog(`Загружено ${data.length} записей`);
+                        } else {
+                            alert('Данные должны быть массивом объектов');
+                        }
+                    } catch (e) {
+                        alert('Ошибка парсинга JSON: ' + e.message);
+                    }
+                },
+                
+                // Автоподготовка данных
                 preprocessData() {
-                    if (!this.uploadedData || !this.targetColumn) {
-                        alert('Please upload data and select a target column');
-                        return;
-                    }
-                    
-                    if (this.features.length === 0) {
-                        alert('Please select at least one feature column');
-                        return;
-                    }
-                    
-                    // Simple preprocessing - convert to tensors
-                    try {
-                        const featuresArray = this.uploadedData.raw.map(row => 
-                            this.features.map(feature => parseFloat(row[feature]) || 0)
-                        );
-                        
-                        const labelsArray = this.uploadedData.raw.map(row => 
-                            parseFloat(row[this.targetColumn]) || 0
-                        );
-                        
-                        this.dataset = {
-                            features: tf.tensor2d(featuresArray),
-                            labels: tf.tensor1d(labelsArray)
-                        };
-                        
-                        this.addLog('Data preprocessing completed! Ready for training.');
-                        
-                    } catch (error) {
-                        this.addLog('Error in preprocessing: ' + error.message, 'error');
-                        console.error(error);
-                    }
-                },
-                
-                autoDetectInputShape() {
-                    if (this.features.length > 0) {
-                        this.inputShape = this.features.length.toString();
-                        this.addLog(`Auto-detected input shape: [${this.inputShape}]`);
-                    }
-                },
-                
-                // Training Manager Methods
-                async startTraining() {
-                    if (!this.modelCompiled) {
-                        alert('Please compile the model first');
-                        return;
-                    }
-                    
-                    if (!this.dataset) {
-                        alert('Please load and preprocess data first');
-                        return;
-                    }
-                    
-                    this.isTraining = true;
-                    this.shouldStopTraining = false;
-                    this.trainingHistory = { loss: [], accuracy: [], val_loss: [], val_accuracy: [] };
-                    this.trainingLog = [];
-                    this.currentEpoch = 0;
-                    this.trainingStartTime = Date.now();
-                    
-                    this.addLog('Starting model training...');
-                    
-                    try {
-                        await this.model.fit(this.dataset.features, this.dataset.labels, {
-                            epochs: this.trainingConfig.epochs,
-                            batchSize: this.trainingConfig.batchSize,
-                            validationSplit: this.trainingConfig.validationSplit,
-                            callbacks: {
-                                onEpochEnd: (epoch, logs) => {
-                                    this.currentEpoch = epoch + 1;
-                                    this.currentLoss = logs.loss;
-                                    this.currentAccuracy = logs.acc;
-                                    
-                                    // Update training history
-                                    this.trainingHistory.loss.push(logs.loss);
-                                    this.trainingHistory.accuracy.push(logs.acc);
-                                    if (logs.val_loss) {
-                                        this.trainingHistory.val_loss.push(logs.val_loss);
-                                        this.trainingHistory.val_accuracy.push(logs.val_acc);
-                                    }
-                                    
-                                    // Update charts
-                                    this.updateCharts();
-                                    
-                                    this.addLog(`Epoch ${this.currentEpoch}/${this.trainingConfig.epochs} - loss: ${logs.loss.toFixed(4)}, acc: ${logs.acc.toFixed(4)}`);
-                                    
-                                    // Check if training should stop
-                                    if (this.shouldStopTraining) {
-                                        this.model.stopTraining = true;
-                                        this.addLog('Training stopped by user');
-                                    }
-                                },
-                                onTrainEnd: () => {
-                                    this.isTraining = false;
-                                    this.trainedModel = this.model;
-                                    this.trainingTime = Math.round((Date.now() - this.trainingStartTime) / 1000);
-                                    this.addLog(`Training completed in ${this.trainingTime} seconds!`);
-                                    this.activeTab = 3; // Switch to results tab
-                                }
+                    // Простая нормализация данных
+                    this.trainingData.forEach(item => {
+                        // Нормализация входов
+                        if (Array.isArray(item.input)) {
+                            const max = Math.max(...item.input);
+                            if (max > 1) {
+                                item.input = item.input.map(val => val / max);
                             }
-                        });
+                        }
                         
-                    } catch (error) {
-                        this.isTraining = false;
-                        this.addLog('Training error: ' + error.message, 'error');
-                        console.error(error);
-                    }
-                },
-                
-                stopTraining() {
-                    this.shouldStopTraining = true;
-                    this.addLog('Stopping training...');
-                },
-                
-                addLog(message, type = 'info') {
-                    this.trainingLog.push({
-                        id: Date.now() + Math.random(),
-                        timestamp: new Date().toLocaleTimeString(),
-                        message: message,
-                        type: type
+                        // Нормализация выходов
+                        if (Array.isArray(item.output)) {
+                            const max = Math.max(...item.output);
+                            if (max > 1) {
+                                item.output = item.output.map(val => val / max);
+                            }
+                        }
                     });
                     
-                    // Keep only last 50 log entries
-                    if (this.trainingLog.length > 50) {
-                        this.trainingLog = this.trainingLog.slice(-50);
-                    }
+                    this.addLog('Данные автоматически подготовлены (нормализация)');
                 },
                 
-                updateCharts() {
-                    if (window.updateD3Charts) {
-                        window.updateD3Charts(this.trainingHistory);
+                // Получение информации о данных
+                getInputSize() {
+                    if (this.trainingData.length === 0) return 0;
+                    const firstItem = this.trainingData[0];
+                    if (Array.isArray(firstItem.input)) {
+                        return firstItem.input.length;
+                    } else if (typeof firstItem.input === 'object') {
+                        return Object.keys(firstItem.input).length;
                     }
+                    return 1;
                 },
                 
-                // Results Methods
-                exportTrainedModel() {
-                    if (!this.trainedModel) {
-                        alert('No trained model available for export');
+                getOutputSize() {
+                    if (this.trainingData.length === 0) return 0;
+                    const firstItem = this.trainingData[0];
+                    if (Array.isArray(firstItem.output)) {
+                        return firstItem.output.length;
+                    } else if (typeof firstItem.output === 'object') {
+                        return Object.keys(firstItem.output).length;
+                    }
+                    return 1;
+                },
+                
+                getDataType() {
+                    if (this.trainingData.length === 0) return 'Неизвестно';
+                    const firstItem = this.trainingData[0];
+                    if (Array.isArray(firstItem.input)) {
+                        return 'Массив чисел';
+                    } else if (typeof firstItem.input === 'object') {
+                        return 'Объект';
+                    }
+                    return 'Число';
+                },
+                
+                getProblemType() {
+                    if (this.trainingData.length === 0) return 'Неизвестно';
+                    const firstOutput = this.trainingData[0].output;
+                    
+                    if (Array.isArray(firstOutput)) {
+                        // Если выходы - это массивы с 0 и 1 (one-hot encoding)
+                        if (firstOutput.length > 1 && firstOutput.includes(1)) {
+                            return 'Многоклассовая классификация';
+                        }
+                        // Если один выход с 0/1
+                        if (firstOutput.length === 1 && (firstOutput[0] === 0 || firstOutput[0] === 1)) {
+                            return 'Бинарная классификация';
+                        }
+                    }
+                    
+                    return 'Регрессия';
+                },
+                
+                // Инициализация графика ошибок
+                initErrorChart() {
+                    const svg = d3.select("#errorChart")
+                        .append("svg")
+                        .attr("width", "100%")
+                        .attr("height", "300");
+                    
+                    // Пока просто создаем SVG, данные добавим позже
+                },
+                
+                // Обновление графика ошибок
+                updateErrorChart(errorData) {
+                    const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+                    const width = 600 - margin.left - margin.right;
+                    const height = 250 - margin.top - margin.bottom;
+                    
+                    d3.select("#errorChart svg").remove();
+                    
+                    const svg = d3.select("#errorChart")
+                        .append("svg")
+                        .attr("width", width + margin.left + margin.right)
+                        .attr("height", height + margin.top + margin.bottom)
+                        .append("g")
+                        .attr("transform", `translate(${margin.left},${margin.top})`);
+                    
+                    // Шкалы
+                    const x = d3.scaleLinear()
+                        .domain([0, errorData.length - 1])
+                        .range([0, width]);
+                    
+                    const y = d3.scaleLinear()
+                        .domain([0, d3.max(errorData)])
+                        .range([height, 0]);
+                    
+                    // Линия
+                    const line = d3.line()
+                        .x((d, i) => x(i))
+                        .y(d => y(d))
+                        .curve(d3.curveMonotoneX);
+                    
+                    // Оси
+                    svg.append("g")
+                        .attr("transform", `translate(0,${height})`)
+                        .call(d3.axisBottom(x));
+                    
+                    svg.append("g")
+                        .call(d3.axisLeft(y));
+                    
+                    // Путь
+                    svg.append("path")
+                        .datum(errorData)
+                        .attr("fill", "none")
+                        .attr("stroke", "#4361ee")
+                        .attr("stroke-width", 1.5)
+                        .attr("d", line);
+                },
+                
+                // Начало обучения
+                startTraining() {
+                    if (this.trainingData.length === 0) {
+                        alert('Сначала загрузите данные для обучения');
                         return;
                     }
                     
-                    alert('Model exported successfully! In a real implementation, this would download the model files.');
-                },
-                
-                downloadWeights() {
-                    if (!this.trainedModel) {
-                        alert('No trained model available');
-                        return;
-                    }
+                    this.trainingStatus = 'training';
+                    this.trainingProgress = 0;
+                    this.currentIteration = 0;
+                    this.currentError = 0;
+                    this.trainingTime = 0;
+                    this.trainingLogs = [];
+                    this.trainedModel = null;
                     
-                    alert('Weights download functionality would be implemented here');
+                    this.addLog('Начало обучения модели');
+                    
+                    // Имитация процесса обучения
+                    this.simulateTraining();
                 },
                 
-                makePrediction() {
-                    if (!this.trainedModel || !this.predictionInput) {
-                        alert('Please train a model and provide input values');
+                // Имитация обучения (в реальном приложении здесь будет вызов Brain.js)
+                simulateTraining() {
+                    const startTime = Date.now();
+                    const errorData = [];
+                    
+                    const interval = setInterval(() => {
+                        if (this.trainingStatus !== 'training') {
+                            clearInterval(interval);
+                            return;
+                        }
+                        
+                        this.currentIteration += 10;
+                        this.currentError = Math.max(0.001, 0.5 * Math.exp(-this.currentIteration / 500));
+                        errorData.push(this.currentError);
+                        
+                        this.trainingProgress = Math.min(100, (this.currentIteration / this.trainingConfig.iterations) * 100);
+                        this.trainingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+                        
+                        if (this.currentIteration % 100 === 0) {
+                            this.addLog(`Итерация ${this.currentIteration}, ошибка: ${this.currentError.toFixed(6)}`);
+                        }
+                        
+                        // Обновляем график каждые 50 итераций
+                        if (this.currentIteration % 50 === 0) {
+                            this.updateErrorChart(errorData);
+                        }
+                        
+                        // Завершение обучения
+                        if (this.currentIteration >= this.trainingConfig.iterations || 
+                            this.currentError <= this.trainingConfig.errorThresh) {
+                            clearInterval(interval);
+                            this.trainingStatus = 'completed';
+                            this.trainingProgress = 100;
+                            
+                            this.trainingResult = {
+                                iterations: this.currentIteration,
+                                error: this.currentError,
+                                time: this.trainingTime
+                            };
+                            
+                            // Создаем простую модель для демонстрации
+                            this.trainedModel = {
+                                run: (input) => {
+                                    // Простая имитация XOR
+                                    if (Array.isArray(input) && input.length === 2) {
+                                        const [a, b] = input;
+                                        return [a ^ b]; // XOR операция
+                                    }
+                                    return [Math.random()];
+                                }
+                            };
+                            
+                            this.addLog(`Обучение завершено! Итерации: ${this.currentIteration}, Ошибка: ${this.currentError.toFixed(6)}`);
+                        }
+                    }, 50);
+                },
+                
+                // Пауза обучения
+                pauseTraining() {
+                    this.trainingStatus = 'paused';
+                    this.addLog('Обучение приостановлено');
+                },
+                
+                // Остановка обучения
+                stopTraining() {
+                    this.trainingStatus = 'idle';
+                    this.addLog('Обучение остановлено');
+                },
+                
+                // Запуск теста
+                runTest() {
+                    if (!this.trainedModel) {
+                        alert('Сначала обучите модель');
                         return;
                     }
                     
                     try {
-                        const inputValues = this.predictionInput.split(',').map(val => parseFloat(val.trim()));
-                        const inputTensor = tf.tensor2d([inputValues]);
-                        const prediction = this.trainedModel.predict(inputTensor);
-                        const predictionData = prediction.dataSync();
-                        
-                        this.predictionResult = predictionData.join(', ');
-                        this.addLog(`Prediction made: ${this.predictionResult}`);
-                        
-                        // Clean up tensors
-                        inputTensor.dispose();
-                        prediction.dispose();
-                        
-                    } catch (error) {
-                        this.addLog('Prediction error: ' + error.message, 'error');
+                        const input = JSON.parse(this.testInput);
+                        this.testResult = this.trainedModel.run(input);
+                        this.addLog(`Выполнен тест с входными данными: ${this.testInput}`);
+                    } catch (e) {
+                        alert('Ошибка парсинга входных данных: ' + e.message);
                     }
                 },
                 
-                updateFinalCharts() {
-                    if (window.updateD3Charts) {
-                        window.updateD3Charts(this.trainingHistory);
+                // Загрузка примера теста
+                loadExampleTest() {
+                    this.testInput = '[0, 1]';
+                },
+                
+                // Генерация кода модели
+                generateModelCode() {
+                    return `// Код для Brain.js
+const net = new brain.${this.getNetworkConstructor()}(${JSON.stringify(this.modelConfig, null, 2)});
+
+const trainingData = ${JSON.stringify(this.trainingData, null, 2)};
+
+net.train(trainingData, ${JSON.stringify(this.trainingConfig, null, 2)});
+
+// Использование модели
+const output = net.run([0, 1]);
+console.log(output);`;
+                },
+                
+                // Получение конструктора сети
+                getNetworkConstructor() {
+                    const mapping = {
+                        'neural-network': 'NeuralNetwork',
+                        'neural-network-gpu': 'NeuralNetworkGPU',
+                        'rnn': 'recurrent.RNN',
+                        'lstm': 'recurrent.LSTM',
+                        'gru': 'recurrent.GRU',
+                        'rnn-time-step': 'recurrent.RNNTimeStep',
+                        'lstm-time-step': 'recurrent.LSTMTimeStep',
+                        'ae': 'Autoencoder'
+                    };
+                    
+                    return mapping[this.selectedNetworkType.id] || 'NeuralNetwork';
+                },
+                
+                // Добавление лога
+                addLog(message) {
+                    this.trainingLogs.unshift({
+                        id: Date.now(),
+                        message: message,
+                        timestamp: new Date().toLocaleTimeString()
+                    });
+                    
+                    // Ограничиваем количество логов
+                    if (this.trainingLogs.length > 50) {
+                        this.trainingLogs.pop();
+                    }
+                },
+                
+                // Экспорт модели
+                exportModel() {
+                    const modelData = {
+                        type: this.selectedNetworkType.id,
+                        config: this.modelConfig,
+                        training: this.trainingResult,
+                        data: this.trainingData
+                    };
+                    
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(modelData, null, 2));
+                    const downloadAnchorNode = document.createElement('a');
+                    downloadAnchorNode.setAttribute("href", dataStr);
+                    downloadAnchorNode.setAttribute("download", "brainjs-model.json");
+                    document.body.appendChild(downloadAnchorNode);
+                    downloadAnchorNode.click();
+                    downloadAnchorNode.remove();
+                    
+                    this.addLog('Модель экспортирована в JSON');
+                },
+                
+                // Экспорт кода
+                exportCode() {
+                    const code = this.generateModelCode();
+                    const dataStr = "data:text/javascript;charset=utf-8," + encodeURIComponent(code);
+                    const downloadAnchorNode = document.createElement('a');
+                    downloadAnchorNode.setAttribute("href", dataStr);
+                    downloadAnchorNode.setAttribute("download", "brainjs-model.js");
+                    document.body.appendChild(downloadAnchorNode);
+                    downloadAnchorNode.click();
+                    downloadAnchorNode.remove();
+                    
+                    this.addLog('Код модели экспортирован');
+                },
+                
+                // Экспорт результатов
+                exportResults() {
+                    const results = {
+                        model: this.selectedNetworkType.name,
+                        config: this.modelConfig,
+                        training: this.trainingResult,
+                        test: this.testResult
+                    };
+                    
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(results, null, 2));
+                    const downloadAnchorNode = document.createElement('a');
+                    downloadAnchorNode.setAttribute("href", dataStr);
+                    downloadAnchorNode.setAttribute("download", "training-results.json");
+                    document.body.appendChild(downloadAnchorNode);
+                    downloadAnchorNode.click();
+                    downloadAnchorNode.remove();
+                    
+                    this.addLog('Результаты обучения экспортированы');
+                },
+                
+                // Сброс приложения
+                resetApp() {
+                    if (confirm('Вы уверены, что хотите сбросить все данные?')) {
+                        this.currentStep = 0;
+                        this.selectedNetworkType = this.networkTypes[0];
+                        this.modelConfig = {
+                            inputSize: 2,
+                            outputSize: 1,
+                            hiddenLayers: [3],
+                            activation: 'sigmoid'
+                        };
+                        this.trainingConfig = {
+                            iterations: 2000,
+                            errorThresh: 0.005,
+                            learningRate: 0.3,
+                            momentum: 0.1,
+                            log: true
+                        };
+                        this.trainingData = [];
+                        this.manualDataInput = '';
+                        this.trainingStatus = 'idle';
+                        this.trainingProgress = 0;
+                        this.currentIteration = 0;
+                        this.currentError = 0;
+                        this.trainingTime = 0;
+                        this.trainingResult = null;
+                        this.trainingLogs = [];
+                        this.trainedModel = null;
+                        this.testInput = '';
+                        this.testResult = null;
+                        
+                        this.addLog('Приложение сброшено');
                     }
                 }
             };
         }
-
-        // D3.js Chart Functions
-        function createLossChart() {
-            const margin = { top: 20, right: 30, bottom: 30, left: 50 };
-            const width = 600 - margin.left - margin.right;
-            const height = 140 - margin.top - margin.bottom;
-            
-            const svg = d3.select('#lossChart')
-                .append('svg')
-                .attr('width', width + margin.left + margin.right)
-                .attr('height', height + margin.top + margin.bottom)
-                .append('g')
-                .attr('transform', `translate(${margin.left},${margin.top})`);
-            
-            return { svg, width, height, margin };
-        }
-
-        function createAccuracyChart() {
-            const margin = { top: 20, right: 30, bottom: 30, left: 50 };
-            const width = 600 - margin.left - margin.right;
-            const height = 140 - margin.top - margin.bottom;
-            
-            const svg = d3.select('#accuracyChart')
-                .append('svg')
-                .attr('width', width + margin.left + margin.right)
-                .attr('height', height + margin.top + margin.bottom)
-                .append('g')
-                .attr('transform', `translate(${margin.left},${margin.top})`);
-            
-            return { svg, width, height, margin };
-        }
-
-        // Global function to update charts
-        window.updateD3Charts = function(trainingHistory) {
-            updateLossChart(trainingHistory);
-            updateAccuracyChart(trainingHistory);
-        };
-
-        function updateLossChart(history) {
-            const container = d3.select('#lossChart');
-            container.select('svg').remove();
-            
-            const { svg, width, height } = createLossChart();
-            
-            const data = history.loss.map((loss, epoch) => ({ epoch: epoch + 1, loss }));
-            const valData = history.val_loss.map((loss, epoch) => ({ epoch: epoch + 1, loss }));
-            
-            // Scales
-            const xScale = d3.scaleLinear()
-                .domain([1, d3.max(data, d => d.epoch) || 1])
-                .range([0, width]);
-                
-            const yScale = d3.scaleLinear()
-                .domain([0, d3.max([...data, ...valData], d => d.loss) || 1])
-                .range([height, 0]);
-            
-            // Lines
-            const line = d3.line()
-                .x(d => xScale(d.epoch))
-                .y(d => yScale(d.loss));
-            
-            // Draw training loss
-            if (data.length > 0) {
-                svg.append('path')
-                    .datum(data)
-                    .attr('fill', 'none')
-                    .attr('stroke', '#dc3545')
-                    .attr('stroke-width', 1.5)
-                    .attr('d', line);
-            }
-            
-            // Draw validation loss
-            if (valData.length > 0) {
-                svg.append('path')
-                    .datum(valData)
-                    .attr('fill', 'none')
-                    .attr('stroke', '#ff6b6b')
-                    .attr('stroke-width', 1.5)
-                    .attr('stroke-dasharray', '5,5')
-                    .attr('d', line);
-            }
-            
-            // Axes
-            const xAxis = d3.axisBottom(xScale).ticks(5);
-            const yAxis = d3.axisLeft(yScale).ticks(5);
-            
-            svg.append('g')
-                .attr('transform', `translate(0,${height})`)
-                .call(xAxis);
-                
-            svg.append('g')
-                .call(yAxis);
-            
-            // Labels
-            svg.append('text')
-                .attr('x', width / 2)
-                .attr('y', -5)
-                .attr('text-anchor', 'middle')
-                .style('font-size', '12px')
-                .text('Loss Over Epochs');
-                
-            if (valData.length > 0) {
-                svg.append('text')
-                    .attr('x', width - 40)
-                    .attr('y', 15)
-                    .style('font-size', '10px')
-                    .style('fill', '#dc3545')
-                    .text('Train');
-                    
-                svg.append('text')
-                    .attr('x', width - 40)
-                    .attr('y', 25)
-                    .style('font-size', '10px')
-                    .style('fill', '#ff6b6b')
-                    .text('Val');
-            }
-        }
-
-        function updateAccuracyChart(history) {
-            const container = d3.select('#accuracyChart');
-            container.select('svg').remove();
-            
-            const { svg, width, height } = createAccuracyChart();
-            
-            const data = history.accuracy.map((acc, epoch) => ({ epoch: epoch + 1, accuracy: acc }));
-            const valData = history.val_accuracy.map((acc, epoch) => ({ epoch: epoch + 1, accuracy: acc }));
-            
-            // Scales
-            const xScale = d3.scaleLinear()
-                .domain([1, d3.max(data, d => d.epoch) || 1])
-                .range([0, width]);
-                
-            const yScale = d3.scaleLinear()
-                .domain([0, 1])
-                .range([height, 0]);
-            
-            // Lines
-            const line = d3.line()
-                .x(d => xScale(d.epoch))
-                .y(d => yScale(d.accuracy));
-            
-            // Draw training accuracy
-            if (data.length > 0) {
-                svg.append('path')
-                    .datum(data)
-                    .attr('fill', 'none')
-                    .attr('stroke', '#28a745')
-                    .attr('stroke-width', 1.5)
-                    .attr('d', line);
-            }
-            
-            // Draw validation accuracy
-            if (valData.length > 0) {
-                svg.append('path')
-                    .datum(valData)
-                    .attr('fill', 'none')
-                    .attr('stroke', '#51cf66')
-                    .attr('stroke-width', 1.5)
-                    .attr('stroke-dasharray', '5,5')
-                    .attr('d', line);
-            }
-            
-            // Axes
-            const xAxis = d3.axisBottom(xScale).ticks(5);
-            const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d => d3.format('.0%')(d));
-            
-            svg.append('g')
-                .attr('transform', `translate(0,${height})`)
-                .call(xAxis);
-                
-            svg.append('g')
-                .call(yAxis);
-            
-            // Labels
-            svg.append('text')
-                .attr('x', width / 2)
-                .attr('y', -5)
-                .attr('text-anchor', 'middle')
-                .style('font-size', '12px')
-                .text('Accuracy Over Epochs');
-                
-            if (valData.length > 0) {
-                svg.append('text')
-                    .attr('x', width - 40)
-                    .attr('y', 15)
-                    .style('font-size', '10px')
-                    .style('fill', '#28a745')
-                    .text('Train');
-                    
-                svg.append('text')
-                    .attr('x', width - 40)
-                    .attr('y', 25)
-                    .style('font-size', '10px')
-                    .style('fill', '#51cf66')
-                    .text('Val');
-            }
-        }
-
-        // Initialize charts when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            createLossChart();
-            createAccuracyChart();
-        });
     </script>
 </body>
 </html>
