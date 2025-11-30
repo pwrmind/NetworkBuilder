@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" class="h-100">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ML5.js Neural Network Tool</title>
+    <title>TensorFlow.js Model Builder</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -12,576 +12,1239 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    
+    <!-- D3.js -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.0/dist/cdn.min.js"></script>
     
     <style>
         body {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: #f8f9fa;
         }
         .nav-tabs .nav-link {
             font-size: 0.875rem;
             padding: 0.5rem 0.75rem;
         }
-        .module-section {
-            display: none;
+        .layer-palette-item {
+            cursor: grab;
+            font-size: 0.8rem;
+            padding: 0.4rem 0.6rem;
         }
-        .module-section.active {
-            display: block;
-        }
-        .image-preview {
-            height: 80px;
-            object-fit: cover;
-        }
-        .layer-palette {
-            min-height: 200px;
+        .model-canvas {
+            min-height: 400px;
+            background-color: #f8f9fa;
             border: 2px dashed #dee2e6;
+            border-radius: 0.375rem;
         }
         .training-chart {
             height: 300px;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
         }
-        .compact-form .form-label {
-            margin-bottom: 0.25rem;
-            font-size: 0.875rem;
+        .form-control-sm, .btn-sm {
+            font-size: 0.775rem;
         }
-        .compact-form .form-control, .compact-form .form-select {
+        .tab-pane {
+            padding: 1rem 0;
+        }
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+        }
+        .nav-tabs .nav-link.active {
+            font-weight: 500;
+            border-bottom: 2px solid #0d6efd;
+        }
+        .btn-sm {
             padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
+            font-size: 0.775rem;
+            border-radius: 0.2rem;
+        }
+        .form-control-sm, .form-select-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.775rem;
+        }
+        .table-sm th, .table-sm td {
+            padding: 0.3rem;
+        }
+        .progress {
+            border-radius: 0.2rem;
+        }
+        .badge {
+            font-size: 0.7em;
+        }
+        .console-log {
+            height: 150px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            font-family: monospace;
         }
     </style>
 </head>
-<body class="d-flex flex-column h-100" x-data="app()">
-    <!-- Header -->
-    <header class="navbar navbar-dark bg-dark navbar-expand-sm">
-        <div class="container-sm">
-            <span class="navbar-brand mb-0 h1">
-                <i class="fas fa-brain me-2"></i>ML5 Neural Network Tool
-            </span>
-        </div>
-    </header>
+<body>
+    <div x-data="app()" x-init="init()">
+        <!-- Navigation -->
+        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom">
+            <div class="container-fluid">
+                <span class="navbar-brand mb-0 h6">
+                    <i class="fas fa-brain text-primary me-2"></i>
+                    TF.js Model Builder
+                </span>
+            </div>
+        </nav>
 
-    <!-- Main Navigation -->
-    <nav class="navbar navbar-light bg-light navbar-expand-sm">
-        <div class="container-sm">
-            <ul class="navbar-nav nav-tabs flex-row w-100">
-                <li class="nav-item">
-                    <a class="nav-link" :class="{ 'active': activeModule === 'data' }" 
-                       @click="activeModule = 'data'">
-                        <i class="fas fa-database me-1"></i>Data
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" :class="{ 'active': activeModule === 'model' }" 
-                       @click="activeModule = 'model'">
-                        <i class="fas fa-project-diagram me-1"></i>Model
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" :class="{ 'active': activeModule === 'training' }" 
-                       @click="activeModule = 'training'">
-                        <i class="fas fa-play-circle me-1"></i>Training
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" :class="{ 'active': activeModule === 'testing' }" 
-                       @click="activeModule = 'testing'">
-                        <i class="fas fa-vial me-1"></i>Testing
-                    </a>
-                </li>
+        <!-- Main Content -->
+        <div class="container-fluid mt-3">
+            <!-- Navigation Tabs -->
+            <ul class="nav nav-tabs nav-fill">
+                <template x-for="(tab, index) in tabs" :key="index">
+                    <li class="nav-item">
+                        <a class="nav-link" 
+                           :class="{ 'active': activeTab === index }"
+                           @click="activeTab = index"
+                           href="#">
+                            <i :class="tab.icon"></i>
+                            <span x-text="tab.name" class="d-none d-sm-inline"></span>
+                        </a>
+                    </li>
+                </template>
             </ul>
-        </div>
-    </nav>
 
-    <!-- Main Content -->
-    <main class="flex-grow-1 container-sm py-3">
-        <!-- Data Manager Module -->
-        <section id="data-manager" class="module-section" :class="{ 'active': activeModule === 'data' }">
-            <div class="row g-2">
-                <div class="col-12">
-                    <h5 class="mb-2"><i class="fas fa-database me-2"></i>Data Manager</h5>
-                </div>
-                
-                <!-- Upload Section -->
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h6 class="card-title">Upload Images</h6>
-                            <div class="mb-2">
-                                <input type="file" class="form-control form-control-sm" 
-                                       id="imageUpload" multiple accept="image/*" 
-                                       @change="handleImageUpload">
+            <!-- Tab Contents -->
+            <div class="tab-content">
+                <!-- Model Builder Tab -->
+                <div x-show="activeTab === 0" class="tab-pane fade show active">
+                    <div class="row g-2">
+                        <!-- Layer Palette -->
+                        <div class="col-sm-3">
+                            <div class="card">
+                                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0"><i class="fas fa-shapes me-1"></i>Layers</h6>
+                                    <button class="btn btn-sm btn-outline-success" @click="compileModel()">
+                                        <i class="fas fa-check me-1"></i>Compile
+                                    </button>
+                                </div>
+                                <div class="card-body p-2">
+                                    <template x-for="layer in availableLayers" :key="layer.type">
+                                        <div class="layer-palette-item btn btn-outline-primary btn-sm w-100 mb-1 text-start"
+                                             @click="addLayer(layer.type)">
+                                            <i :class="layer.icon" class="me-1"></i>
+                                            <span x-text="layer.name"></span>
+                                        </div>
+                                    </template>
+                                </div>
                             </div>
-                            <div class="d-grid">
-                                <button class="btn btn-sm btn-outline-primary" @click="startWebcam">
-                                    <i class="fas fa-camera me-1"></i>Use Webcam
-                                </button>
+                            
+                            <!-- Model Summary -->
+                            <div class="card mt-2">
+                                <div class="card-header py-2">
+                                    <h6 class="mb-0"><i class="fas fa-info-circle me-1"></i>Model Info</h6>
+                                </div>
+                                <div class="card-body p-2">
+                                    <div class="small">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Layers:</span>
+                                            <span x-text="layers.length"></span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Status:</span>
+                                            <span x-text="modelCompiled ? 'Compiled' : 'Not Compiled'" 
+                                                  :class="modelCompiled ? 'text-success' : 'text-warning'"></span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Classes Management -->
-                    <div class="card mt-2">
-                        <div class="card-body">
-                            <h6 class="card-title">Classes</h6>
-                            <div class="input-group input-group-sm mb-2">
-                                <input type="text" class="form-control" placeholder="New class" x-model="newClassName">
-                                <button class="btn btn-outline-success" @click="addClass">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
-                            <div class="class-list">
-                                <template x-for="(cls, index) in classes" :key="index">
-                                    <div class="d-flex justify-content-between align-items-center py-1">
-                                        <span x-text="cls"></span>
-                                        <button class="btn btn-sm btn-outline-danger" 
-                                                @click="removeClass(index)">
+                        
+                        <!-- Model Canvas -->
+                        <div class="col-sm-6">
+                            <div class="card">
+                                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0"><i class="fas fa-project-diagram me-1"></i>Architecture</h6>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-danger me-1" @click="clearModel()">
                                             <i class="fas fa-trash"></i>
                                         </button>
+                                        <button class="btn btn-sm btn-outline-secondary" @click="exportModel()">
+                                            <i class="fas fa-download"></i>
+                                        </button>
                                     </div>
-                                </template>
+                                </div>
+                                <div class="card-body">
+                                    <div class="model-canvas p-3">
+                                        <template x-for="(layer, index) in layers" :key="layer.id">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="badge bg-primary me-2" x-text="index + 1"></div>
+                                                <div class="card flex-grow-1"
+                                                     :class="{ 'border-primary shadow-sm': selectedLayer && selectedLayer.id === layer.id }"
+                                                     @click="selectLayer(layer)"
+                                                     style="cursor: pointer;">
+                                                    <div class="card-body py-2">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <div>
+                                                                <strong x-text="layer.name"></strong>
+                                                                <small class="text-muted ms-2" x-text="getLayerDescription(layer)"></small>
+                                                            </div>
+                                                            <button class="btn btn-sm btn-outline-danger" 
+                                                                    @click.stop="removeLayer(layer.id)">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <div x-show="layers.length === 0" class="text-center text-muted py-5">
+                                            <i class="fas fa-layer-group fa-2x mb-2"></i>
+                                            <p>Click on layers from palette to build your model</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Layer Properties & Compilation -->
+                        <div class="col-sm-3">
+                            <!-- Layer Properties -->
+                            <div class="card mb-2">
+                                <div class="card-header py-2">
+                                    <h6 class="mb-0"><i class="fas fa-cog me-1"></i>Layer Properties</h6>
+                                </div>
+                                <div class="card-body p-2">
+                                    <template x-if="selectedLayer">
+                                        <div>
+                                            <h6 x-text="selectedLayer.name" class="border-bottom pb-1 small"></h6>
+                                            <template x-for="(value, param) in selectedLayer.params">
+                                                <div class="mb-2">
+                                                    <label class="form-label small mb-1 text-capitalize" 
+                                                           x-text="param.replace(/([A-Z])/g, ' $1')"></label>
+                                                    <input type="text" class="form-control form-control-sm" 
+                                                           :value="value"
+                                                           @input="updateLayerParam(param, $event.target.value)">
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <div x-show="!selectedLayer" class="text-center text-muted py-3">
+                                        <i class="fas fa-mouse-pointer fa-lg"></i>
+                                        <p class="small mt-1">Select a layer to edit properties</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Compilation Settings -->
+                            <div class="card">
+                                <div class="card-header py-2">
+                                    <h6 class="mb-0"><i class="fas fa-wrench me-1"></i>Compilation</h6>
+                                </div>
+                                <div class="card-body p-2">
+                                    <div class="mb-2">
+                                        <label class="form-label small mb-1">Optimizer</label>
+                                        <select class="form-select form-select-sm" x-model="trainingConfig.optimizer">
+                                            <option value="sgd">SGD</option>
+                                            <option value="adam">Adam</option>
+                                            <option value="rmsprop">RMSprop</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small mb-1">Loss</label>
+                                        <select class="form-select form-select-sm" x-model="trainingConfig.loss">
+                                            <option value="meanSquaredError">Mean Squared Error</option>
+                                            <option value="categoricalCrossentropy">Categorical Crossentropy</option>
+                                            <option value="binaryCrossentropy">Binary Crossentropy</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small mb-1">Metrics</label>
+                                        <div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="checkbox" value="accuracy" 
+                                                       x-model="trainingConfig.metrics" id="metric-accuracy">
+                                                <label class="form-check-label small" for="metric-accuracy">Accuracy</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Image Preview -->
-                <div class="col-md-8">
-                    <div class="card">
-                        <div class="card-body">
-                            <h6 class="card-title">Image Preview & Labeling</h6>
-                            <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-2" id="imageGrid">
-                                <template x-for="(image, index) in images" :key="index">
-                                    <div class="col">
-                                        <div class="card">
-                                            <img :src="image.url" class="card-img-top image-preview" 
-                                                 :alt="'Image ' + index">
-                                            <div class="card-body p-2">
-                                                <select class="form-select form-select-sm" 
-                                                        x-model="image.label"
-                                                        @change="updateImageLabel(index, $event.target.value)">
-                                                    <option value="">Select class</option>
-                                                    <template x-for="cls in classes" :key="cls">
-                                                        <option :value="cls" x-text="cls"></option>
+                <!-- Data Manager Tab -->
+                <div x-show="activeTab === 1" class="tab-pane fade">
+                    <div class="row g-2">
+                        <!-- Data Upload -->
+                        <div class="col-sm-6">
+                            <div class="card">
+                                <div class="card-header py-2">
+                                    <h6 class="mb-0"><i class="fas fa-upload me-1"></i>Upload Data</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label small">Select File Type</label>
+                                        <select class="form-select form-select-sm" x-model="uploadedData?.type">
+                                            <option value="csv">CSV</option>
+                                            <option value="json">JSON</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="border rounded p-4 text-center"
+                                         @drop="handleFileDrop($event)"
+                                         @dragover.prevent
+                                         @dragenter.prevent
+                                         style="border-style: dashed !important; cursor: pointer;">
+                                        <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                                        <p class="small text-muted mb-2">Drag & drop your CSV or JSON file here</p>
+                                        <input type="file" class="form-control form-control-sm" 
+                                               @change="handleFileSelect($event)" 
+                                               accept=".csv,.json" hidden>
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                @click="$el.previousElementSibling.click()">
+                                            <i class="fas fa-folder-open me-1"></i>Browse Files
+                                        </button>
+                                    </div>
+                                    
+                                    <div x-show="uploadedData" class="mt-3">
+                                        <div class="alert alert-success py-2">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            File loaded: <span x-text="uploadedData.name"></span>
+                                            (<span x-text="uploadedData.rows"></span> rows)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Data Configuration -->
+                        <div class="col-sm-6">
+                            <div class="card">
+                                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0"><i class="fas fa-sliders-h me-1"></i>Data Configuration</h6>
+                                    <button class="btn btn-sm btn-outline-success" 
+                                            :disabled="!uploadedData"
+                                            @click="preprocessData()">
+                                        <i class="fas fa-cog me-1"></i>Preprocess
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <template x-if="uploadedData && uploadedData.columns">
+                                        <div>
+                                            <div class="mb-3">
+                                                <label class="form-label small">Target Column (Labels)</label>
+                                                <select class="form-select form-select-sm" x-model="targetColumn">
+                                                    <option value="">Select target column</option>
+                                                    <template x-for="column in uploadedData.columns" :key="column">
+                                                        <option :value="column" x-text="column"></option>
                                                     </template>
                                                 </select>
                                             </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Model Builder Module -->
-        <section id="model-builder" class="module-section" :class="{ 'active': activeModule === 'model' }">
-            <div class="row g-2">
-                <div class="col-12">
-                    <h5 class="mb-2"><i class="fas fa-project-diagram me-2"></i>Model Builder</h5>
-                </div>
-                
-                <!-- Quick Start -->
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h6 class="card-title">Quick Start</h6>
-                            <div class="compact-form">
-                                <div class="mb-2">
-                                    <label class="form-label">Pre-trained Model</label>
-                                    <select class="form-select form-select-sm" x-model="selectedPretrainedModel">
-                                        <option value="MobileNet">MobileNet</option>
-                                        <option value="ResNet">ResNet</option>
-                                    </select>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Number of Classes</label>
-                                    <input type="number" class="form-control form-control-sm" 
-                                           x-model="numClasses" min="2" max="100">
-                                </div>
-                                <div class="d-grid">
-                                    <button class="btn btn-sm btn-success" @click="initializePretrainedModel">
-                                        Initialize Model
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Layer Palette -->
-                    <div class="card mt-2">
-                        <div class="card-body">
-                            <h6 class="card-title">Layer Palette</h6>
-                            <div class="d-grid gap-1">
-                                <template x-for="layer in availableLayers" :key="layer.type">
-                                    <button class="btn btn-sm btn-outline-secondary text-start" 
-                                            @click="addLayerToModel(layer)">
-                                        <i class="fas fa-plus me-1"></i>
-                                        <span x-text="layer.name"></span>
-                                    </button>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Model Canvas -->
-                <div class="col-md-8">
-                    <div class="card">
-                        <div class="card-body">
-                            <h6 class="card-title">Model Architecture</h6>
-                            <div class="layer-palette rounded p-3" id="modelCanvas">
-                                <template x-for="(layer, index) in modelLayers" :key="index">
-                                    <div class="card mb-2">
-                                        <div class="card-body py-2">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span x-text="layer.name"></span>
-                                                <div>
-                                                    <button class="btn btn-sm btn-outline-primary me-1" 
-                                                            @click="configureLayer(index)">
-                                                        <i class="fas fa-cog"></i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-outline-danger" 
-                                                            @click="removeLayer(index)">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label small">Feature Columns</label>
+                                                <div style="max-height: 200px; overflow-y: auto;">
+                                                    <template x-for="column in uploadedData.columns" :key="column">
+                                                        <div class="form-check" x-show="column !== targetColumn">
+                                                            <input class="form-check-input" type="checkbox" 
+                                                                   :value="column" 
+                                                                   x-model="features"
+                                                                   :id="'feature-' + column">
+                                                            <label class="form-check-label small" 
+                                                                   :for="'feature-' + column" 
+                                                                   x-text="column"></label>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label small">Validation Split</label>
+                                                <input type="range" class="form-range" min="0.1" max="0.5" step="0.05"
+                                                       x-model="trainingConfig.validationSplit">
+                                                <div class="small text-muted text-center">
+                                                    <span x-text="Math.round((1 - trainingConfig.validationSplit) * 100)"></span>% Train / 
+                                                    <span x-text="Math.round(trainingConfig.validationSplit * 100)"></span>% Validation
                                                 </div>
                                             </div>
                                         </div>
+                                    </template>
+                                    
+                                    <div x-show="!uploadedData" class="text-center text-muted py-4">
+                                        <i class="fas fa-database fa-2x mb-2"></i>
+                                        <p class="small">Upload a dataset to configure preprocessing</p>
                                     </div>
-                                </template>
-                                <div x-show="modelLayers.length === 0" class="text-center text-muted py-4">
-                                    Drag layers here or use Quick Start
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Data Preview -->
+                        <div class="col-12" x-show="uploadedData">
+                            <div class="card">
+                                <div class="card-header py-2">
+                                    <h6 class="mb-0"><i class="fas fa-table me-1"></i>Data Preview</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive" style="max-height: 300px;">
+                                        <table class="table table-sm table-striped mb-0">
+                                            <thead class="sticky-top bg-light">
+                                                <tr>
+                                                    <template x-for="column in uploadedData.columns" :key="column">
+                                                        <th class="small" 
+                                                            :class="column === targetColumn ? 'table-success' : (features.includes(column) ? 'table-primary' : '')"
+                                                            x-text="column"></th>
+                                                    </template>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <template x-for="(row, index) in uploadedData.preview" :key="index">
+                                                    <tr>
+                                                        <template x-for="column in uploadedData.columns" :key="column">
+                                                            <td class="small" x-text="row[column]"></td>
+                                                        </template>
+                                                    </tr>
+                                                </template>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
 
-        <!-- Training Hub Module -->
-        <section id="training-hub" class="module-section" :class="{ 'active': activeModule === 'training' }">
-            <div class="row g-2">
-                <div class="col-12">
-                    <h5 class="mb-2"><i class="fas fa-play-circle me-2"></i>Training Hub</h5>
-                </div>
-                
-                <!-- Training Controls -->
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h6 class="card-title">Training Configuration</h6>
-                            <div class="compact-form">
-                                <div class="mb-2">
-                                    <label class="form-label">Learning Rate</label>
-                                    <input type="number" class="form-control form-control-sm" 
-                                           x-model="learningRate" step="0.001" min="0.0001" max="1">
+                <!-- Training Tab -->
+                <div x-show="activeTab === 2" class="tab-pane fade">
+                    <div class="row g-2">
+                        <!-- Training Controls -->
+                        <div class="col-sm-4">
+                            <div class="card">
+                                <div class="card-header py-2">
+                                    <h6 class="mb-0"><i class="fas fa-cogs me-1"></i>Training Configuration</h6>
                                 </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Epochs</label>
-                                    <input type="number" class="form-control form-control-sm" 
-                                           x-model="epochs" min="1" max="1000">
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label small">Epochs</label>
+                                        <input type="number" class="form-control form-control-sm" 
+                                               x-model="trainingConfig.epochs" min="1" max="1000">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label small">Batch Size</label>
+                                        <input type="number" class="form-control form-control-sm" 
+                                               x-model="trainingConfig.batchSize" min="1" max="1024">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label small">Learning Rate</label>
+                                        <input type="number" class="form-control form-control-sm" 
+                                               step="0.001" value="0.001" disabled>
+                                        <small class="text-muted">Configure in optimizer</small>
+                                    </div>
+                                    
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-sm btn-success" 
+                                                :disabled="!modelCompiled || !dataset || isTraining"
+                                                @click="startTraining()">
+                                            <i class="fas fa-play me-1"></i>
+                                            <span x-text="isTraining ? 'Training...' : 'Start Training'"></span>
+                                        </button>
+                                        
+                                        <button class="btn btn-sm btn-warning" 
+                                                :disabled="!isTraining"
+                                                @click="stopTraining()">
+                                            <i class="fas fa-stop me-1"></i>Stop Training
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Batch Size</label>
-                                    <input type="number" class="form-control form-control-sm" 
-                                           x-model="batchSize" min="1" max="64">
-                                </div>
-                                <div class="d-grid gap-1">
-                                    <button class="btn btn-sm btn-success" @click="startTraining" 
-                                            :disabled="!canStartTraining">
-                                        <i class="fas fa-play me-1"></i>Start Training
-                                    </button>
-                                    <button class="btn btn-sm btn-warning" @click="pauseTraining" 
-                                            :disabled="!isTraining">
-                                        <i class="fas fa-pause me-1"></i>Pause
-                                    </button>
-                                    <button class="btn btn-sm btn-danger" @click="stopTraining" 
-                                            :disabled="!isTraining">
-                                        <i class="fas fa-stop me-1"></i>Stop
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Training Progress -->
-                    <div class="card mt-2">
-                        <div class="card-body">
-                            <h6 class="card-title">Training Progress</h6>
-                            <div class="progress mb-2" style="height: 20px;">
-                                <div class="progress-bar" role="progressbar" 
-                                     :style="`width: ${trainingProgress}%`" 
-                                     :aria-valuenow="trainingProgress" 
-                                     aria-valuemin="0" aria-valuemax="100">
-                                    <span x-text="trainingProgress + '%'"></span>
-                                </div>
-                            </div>
-                            <div class="small text-muted">
-                                Epoch: <span x-text="currentEpoch"></span>/<span x-text="epochs"></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Training Visualization -->
-                <div class="col-md-8">
-                    <div class="card">
-                        <div class="card-body">
-                            <h6 class="card-title">Training Metrics</h6>
-                            <div class="training-chart bg-light rounded" id="trainingChart">
-                                <!-- Chart will be rendered here -->
-                                <div class="text-center text-muted py-5" x-show="!isTraining">
-                                    Training metrics will appear here once training starts
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Testing & Export Module -->
-        <section id="testing-export" class="module-section" :class="{ 'active': activeModule === 'testing' }">
-            <div class="row g-2">
-                <div class="col-12">
-                    <h5 class="mb-2"><i class="fas fa-vial me-2"></i>Testing & Export</h5>
-                </div>
-                
-                <!-- Testing Interface -->
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h6 class="card-title">Model Testing</h6>
-                            <div class="mb-3">
-                                <input type="file" class="form-control form-control-sm" 
-                                       id="testImageUpload" accept="image/*" 
-                                       @change="handleTestImageUpload">
-                            </div>
-                            <div class="d-grid mb-3">
-                                <button class="btn btn-sm btn-outline-primary" @click="startTestWebcam">
-                                    <i class="fas fa-camera me-1"></i>Test with Webcam
-                                </button>
                             </div>
                             
-                            <!-- Test Results -->
-                            <div id="testResults" x-show="testPredictions.length > 0">
-                                <h6>Predictions:</h6>
-                                <template x-for="prediction in testPredictions" :key="prediction.label">
-                                    <div class="d-flex justify-content-between align-items-center py-1">
-                                        <span x-text="prediction.label"></span>
-                                        <span class="badge bg-primary" 
-                                              x-text="(prediction.confidence * 100).toFixed(2) + '%'"></span>
+                            <!-- Training Progress -->
+                            <div class="card mt-2">
+                                <div class="card-header py-2">
+                                    <h6 class="mb-0"><i class="fas fa-tachometer-alt me-1"></i>Training Progress</h6>
+                                </div>
+                                <div class="card-body">
+                                    <template x-if="isTraining">
+                                        <div>
+                                            <div class="progress mb-2" style="height: 20px;">
+                                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                                     role="progressbar" 
+                                                     :style="`width: ${(currentEpoch / trainingConfig.epochs) * 100}%`">
+                                                    <span x-text="`Epoch ${currentEpoch} / ${trainingConfig.epochs}`"></span>
+                                                </div>
+                                            </div>
+                                            <div class="small">
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Loss:</span>
+                                                    <span x-text="currentLoss ? currentLoss.toFixed(4) : '--'"></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between">
+                                                    <span>Accuracy:</span>
+                                                    <span x-text="currentAccuracy ? (currentAccuracy * 100).toFixed(2) + '%' : '--'"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <div x-show="!isTraining" class="text-center text-muted py-3">
+                                        <i class="fas fa-hourglass-half fa-lg"></i>
+                                        <p class="small mt-1">Training not started</p>
                                     </div>
-                                </template>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Training Charts -->
+                        <div class="col-sm-8">
+                            <div class="card">
+                                <div class="card-header py-2">
+                                    <h6 class="mb-0"><i class="fas fa-chart-line me-1"></i>Training Metrics</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="training-chart" id="lossChart"></div>
+                                    <div class="training-chart mt-2" id="accuracyChart"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Training Log -->
+                        <div class="col-12 mt-2">
+                            <div class="card">
+                                <div class="card-header py-2">
+                                    <h6 class="mb-0"><i class="fas fa-terminal me-1"></i>Training Log</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="console-log p-2 small">
+                                        <template x-for="log in trainingLog" :key="log.id">
+                                            <div :class="log.type === 'error' ? 'text-danger' : 'text-muted'">
+                                                <span x-text="log.timestamp"></span> - <span x-text="log.message"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Export Section -->
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h6 class="card-title">Export Model</h6>
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-sm btn-success" @click="exportModel">
-                                    <i class="fas fa-download me-1"></i>Export Model Files
-                                </button>
-                                <button class="btn btn-sm btn-info" @click="generateCode">
-                                    <i class="fas fa-code me-1"></i>Generate Integration Code
-                                </button>
+                <!-- Results Tab -->
+                <div x-show="activeTab === 3" class="tab-pane fade">
+                    <div class="row g-2">
+                        <!-- Model Summary -->
+                        <div class="col-sm-6">
+                            <div class="card">
+                                <div class="card-header py-2">
+                                    <h6 class="mb-0"><i class="fas fa-info-circle me-1"></i>Training Summary</h6>
+                                </div>
+                                <div class="card-body">
+                                    <template x-if="trainedModel && trainingHistory.loss.length > 0">
+                                        <div>
+                                            <div class="row text-center">
+                                                <div class="col-sm-6 mb-2">
+                                                    <div class="card bg-light">
+                                                        <div class="card-body py-2">
+                                                            <h6 class="card-title text-primary" 
+                                                                x-text="trainingHistory.loss[trainingHistory.loss.length - 1].toFixed(4)"></h6>
+                                                            <small class="text-muted">Final Loss</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-6 mb-2">
+                                                    <div class="card bg-light">
+                                                        <div class="card-body py-2">
+                                                            <h6 class="card-title text-success" 
+                                                                x-text="(trainingHistory.accuracy[trainingHistory.accuracy.length - 1] * 100).toFixed(2) + '%'"></h6>
+                                                            <small class="text-muted">Final Accuracy</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mt-3">
+                                                <h6 class="border-bottom pb-1">Training Details</h6>
+                                                <div class="small">
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>Total Epochs:</span>
+                                                        <span x-text="trainingHistory.loss.length"></span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>Best Accuracy:</span>
+                                                        <span x-text="(Math.max(...trainingHistory.accuracy) * 100).toFixed(2) + '%'"></span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between">
+                                                        <span>Lowest Loss:</span>
+                                                        <span x-text="Math.min(...trainingHistory.loss).toFixed(4)"></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    
+                                    <div x-show="!trainedModel" class="text-center text-muted py-4">
+                                        <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                                        <p class="small">No training results available. Train a model first.</p>
+                                    </div>
+                                </div>
                             </div>
                             
-                            <!-- Generated Code -->
-                            <div class="mt-3" x-show="generatedCode">
-                                <label class="form-label">Integration Code:</label>
-                                <textarea class="form-control form-control-sm" rows="8" 
-                                          x-text="generatedCode" readonly></textarea>
-                                <button class="btn btn-sm btn-outline-secondary mt-2" @click="copyCode">
-                                    <i class="fas fa-copy me-1"></i>Copy Code
-                                </button>
+                            <!-- Model Export -->
+                            <div class="card mt-2">
+                                <div class="card-header py-2">
+                                    <h6 class="mb-0"><i class="fas fa-download me-1"></i>Model Export</h6>
+                                </div>
+                                <div class="card-body">
+                                    <template x-if="trainedModel">
+                                        <div class="text-center">
+                                            <p class="small text-muted mb-2">Export your trained model for use in other applications</p>
+                                            <button class="btn btn-sm btn-outline-primary w-100" @click="exportTrainedModel()">
+                                                <i class="fas fa-file-export me-1"></i>Export Model
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <div x-show="!trainedModel" class="text-center text-muted">
+                                        <p class="small">Train a model to enable export</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Performance Charts -->
+                        <div class="col-sm-6">
+                            <div class="card">
+                                <div class="card-header py-2">
+                                    <h6 class="mb-0"><i class="fas fa-chart-area me-1"></i>Final Metrics</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="training-chart" id="finalLossChart"></div>
+                                    <div class="training-chart mt-2" id="finalAccuracyChart"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-dark text-light py-3 mt-auto">
-        <div class="container-sm text-center">
-            <small>ML5.js Neural Network Tool | Built with Alpine.js, Bootstrap & ML5.js</small>
         </div>
-    </footer>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Alpine.js -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    
-    <!-- ML5.js -->
-    <script src="https://unpkg.com/ml5@1.0.0/dist/ml5.min.js"></script>
+    </div>
 
     <script>
         function app() {
             return {
-                // Application state
-                activeModule: 'data',
-                images: [],
-                classes: [],
-                newClassName: '',
-                selectedPretrainedModel: 'MobileNet',
-                numClasses: 2,
-                modelLayers: [],
-                availableLayers: [
-                    { type: 'dense', name: 'Dense Layer' },
-                    { type: 'conv2d', name: 'Convolutional Layer' },
-                    { type: 'maxpooling2d', name: 'Max Pooling Layer' },
-                    { type: 'dropout', name: 'Dropout Layer' }
+                // Reactive State
+                activeTab: 0,
+                tabs: [
+                    { name: 'Model', icon: 'fas fa-project-diagram' },
+                    { name: 'Data', icon: 'fas fa-database' },
+                    { name: 'Training', icon: 'fas fa-play-circle' },
+                    { name: 'Results', icon: 'fas fa-chart-line' }
                 ],
-                learningRate: 0.001,
-                epochs: 10,
-                batchSize: 16,
+                
+                // Model State
+                layers: [],
+                availableLayers: [
+                    { type: 'dense', name: 'Dense Layer', icon: 'fas fa-layer-group', params: { units: 64, activation: 'relu' }},
+                    { type: 'conv2d', name: 'Conv2D', icon: 'fas fa-border-all', params: { filters: 32, kernelSize: 3, activation: 'relu' }},
+                    { type: 'maxpooling2d', name: 'MaxPooling2D', icon: 'fas fa-th-large', params: { poolSize: 2 }},
+                    { type: 'flatten', name: 'Flatten', icon: 'fas fa-arrows-alt-h', params: {}},
+                    { type: 'dropout', name: 'Dropout', icon: 'fas fa-tint', params: { rate: 0.5 }}
+                ],
+                selectedLayer: null,
+                modelCompiled: false,
+                model: null,
+                
+                // Data State
+                uploadedData: null,
+                dataset: null,
+                targetColumn: '',
+                features: [],
+                
+                // Training State
                 isTraining: false,
-                trainingProgress: 0,
+                trainingHistory: { loss: [], accuracy: [], val_loss: [], val_accuracy: [] },
+                trainingConfig: {
+                    optimizer: 'adam',
+                    loss: 'categoricalCrossentropy',
+                    metrics: ['accuracy'],
+                    epochs: 10,
+                    batchSize: 32,
+                    validationSplit: 0.2
+                },
                 currentEpoch: 0,
-                testPredictions: [],
-                generatedCode: '',
+                currentLoss: null,
+                currentAccuracy: null,
+                trainingLog: [],
+                shouldStopTraining: false,
                 
-                // Methods
-                handleImageUpload(event) {
-                    const files = event.target.files;
-                    for (let file of files) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            this.images.push({
-                                url: e.target.result,
-                                label: '',
-                                file: file
-                            });
+                // Results State
+                trainedModel: null,
+                
+                // Initialization
+                init() {
+                    console.log("TF.js Model Builder initialized");
+                },
+                
+                // Navigation Methods
+                switchTab(tabIndex) {
+                    this.activeTab = tabIndex;
+                },
+                
+                // Model Builder Methods
+                addLayer(layerType) {
+                    const template = this.availableLayers.find(l => l.type === layerType);
+                    if (template) {
+                        const newLayer = {
+                            id: Date.now() + Math.random(),
+                            type: layerType,
+                            name: `${template.name} ${this.layers.filter(l => l.type === layerType).length + 1}`,
+                            params: JSON.parse(JSON.stringify(template.params))
                         };
-                        reader.readAsDataURL(file);
-                    }
-                    event.target.value = '';
-                },
-                
-                startWebcam() {
-                    alert('Webcam functionality would be implemented here');
-                    // Actual implementation would use navigator.mediaDevices.getUserMedia
-                },
-                
-                addClass() {
-                    if (this.newClassName.trim() && !this.classes.includes(this.newClassName.trim())) {
-                        this.classes.push(this.newClassName.trim());
-                        this.newClassName = '';
+                        this.layers.push(newLayer);
+                        this.selectedLayer = newLayer;
                     }
                 },
                 
-                removeClass(index) {
-                    this.classes.splice(index, 1);
-                    // Also remove this class from any images
-                    this.images.forEach(image => {
-                        if (image.label === this.classes[index]) {
-                            image.label = '';
-                        }
-                    });
+                removeLayer(layerId) {
+                    this.layers = this.layers.filter(layer => layer.id !== layerId);
+                    if (this.selectedLayer && this.selectedLayer.id === layerId) {
+                        this.selectedLayer = this.layers[this.layers.length - 1] || null;
+                    }
                 },
                 
-                updateImageLabel(index, label) {
-                    this.images[index].label = label;
+                selectLayer(layer) {
+                    this.selectedLayer = layer;
                 },
                 
-                initializePretrainedModel() {
-                    alert(`Initializing ${this.selectedPretrainedModel} with ${this.numClasses} classes`);
-                    // Actual implementation would use ml5.js to initialize the model
+                updateLayerParam(param, value) {
+                    if (this.selectedLayer && this.selectedLayer.params[param] !== undefined) {
+                        this.selectedLayer.params[param] = value;
+                    }
                 },
                 
-                addLayerToModel(layer) {
-                    this.modelLayers.push({ ...layer });
+                getLayerDescription(layer) {
+                    const params = Object.entries(layer.params).map(([key, value]) => `${key}: ${value}`).join(', ');
+                    return params || 'default parameters';
                 },
                 
-                removeLayer(index) {
-                    this.modelLayers.splice(index, 1);
-                },
-                
-                configureLayer(index) {
-                    alert(`Configuring layer: ${this.modelLayers[index].name}`);
-                    // Actual implementation would show a configuration modal
-                },
-                
-                get canStartTraining() {
-                    return this.images.length > 0 && 
-                           this.classes.length >= 2 && 
-                           this.modelLayers.length > 0;
-                },
-                
-                startTraining() {
-                    this.isTraining = true;
-                    this.trainingProgress = 0;
-                    this.currentEpoch = 0;
+                async compileModel() {
+                    if (this.layers.length === 0) {
+                        alert('Please add at least one layer to the model');
+                        return;
+                    }
                     
-                    // Simulate training progress
-                    const interval = setInterval(() => {
-                        if (this.trainingProgress < 100) {
-                            this.trainingProgress += 10;
-                            this.currentEpoch = Math.floor(this.trainingProgress / 100 * this.epochs);
-                        } else {
-                            clearInterval(interval);
-                            this.isTraining = false;
+                    try {
+                        this.model = tf.sequential();
+                        
+                        // Add layers to model
+                        for (const layerConfig of this.layers) {
+                            let layer;
+                            switch (layerConfig.type) {
+                                case 'dense':
+                                    layer = tf.layers.dense({
+                                        units: parseInt(layerConfig.params.units) || 64,
+                                        activation: layerConfig.params.activation || 'relu'
+                                    });
+                                    break;
+                                case 'conv2d':
+                                    layer = tf.layers.conv2d({
+                                        filters: parseInt(layerConfig.params.filters) || 32,
+                                        kernelSize: parseInt(layerConfig.params.kernelSize) || 3,
+                                        activation: layerConfig.params.activation || 'relu'
+                                    });
+                                    break;
+                                case 'maxpooling2d':
+                                    layer = tf.layers.maxPooling2d({
+                                        poolSize: parseInt(layerConfig.params.poolSize) || 2
+                                    });
+                                    break;
+                                case 'flatten':
+                                    layer = tf.layers.flatten();
+                                    break;
+                                case 'dropout':
+                                    layer = tf.layers.dropout({
+                                        rate: parseFloat(layerConfig.params.rate) || 0.5
+                                    });
+                                    break;
+                            }
+                            if (layer) this.model.add(layer);
                         }
-                    }, 500);
-                },
-                
-                pauseTraining() {
-                    this.isTraining = false;
-                    // Implementation would pause the actual training process
-                },
-                
-                stopTraining() {
-                    this.isTraining = false;
-                    this.trainingProgress = 0;
-                    this.currentEpoch = 0;
-                    // Implementation would stop the actual training process
-                },
-                
-                handleTestImageUpload(event) {
-                    const file = event.target.files[0];
-                    if (file) {
-                        // Simulate prediction
-                        this.testPredictions = [
-                            { label: 'Class A', confidence: 0.85 },
-                            { label: 'Class B', confidence: 0.15 }
-                        ];
+                        
+                        // Compile the model
+                        this.model.compile({
+                            optimizer: this.trainingConfig.optimizer,
+                            loss: this.trainingConfig.loss,
+                            metrics: this.trainingConfig.metrics
+                        });
+                        
+                        this.modelCompiled = true;
+                        alert('Model compiled successfully!');
+                        
+                    } catch (error) {
+                        alert('Error compiling model: ' + error.message);
+                        console.error(error);
                     }
                 },
                 
-                startTestWebcam() {
-                    alert('Test webcam functionality would be implemented here');
+                clearModel() {
+                    this.layers = [];
+                    this.selectedLayer = null;
+                    this.modelCompiled = false;
+                    this.model = null;
                 },
                 
                 exportModel() {
+                    if (!this.modelCompiled) {
+                        alert('Please compile the model first');
+                        return;
+                    }
                     alert('Model export functionality would be implemented here');
-                    // Implementation would use ml5.js model saving functionality
                 },
                 
-                generateCode() {
-                    this.generatedCode = `// ML5.js Integration Code
-const model = await ml5.imageClassifier('model.json');
-const prediction = await model.classify(document.getElementById('image'));
-console.log(prediction);`;
+                // Data Manager Methods
+                handleFileDrop(event) {
+                    event.preventDefault();
+                    const files = event.dataTransfer.files;
+                    if (files.length > 0) {
+                        this.processFile(files[0]);
+                    }
                 },
                 
-                copyCode() {
-                    navigator.clipboard.writeText(this.generatedCode);
-                    alert('Code copied to clipboard!');
+                handleFileSelect(event) {
+                    const files = event.target.files;
+                    if (files.length > 0) {
+                        this.processFile(files[0]);
+                    }
+                },
+                
+                async processFile(file) {
+                    const fileType = file.name.split('.').pop().toLowerCase();
+                    
+                    if (fileType !== 'csv' && fileType !== 'json') {
+                        alert('Please upload a CSV or JSON file');
+                        return;
+                    }
+                    
+                    try {
+                        const text = await file.text();
+                        let data;
+                        
+                        if (fileType === 'csv') {
+                            data = this.parseCSV(text);
+                        } else {
+                            data = JSON.parse(text);
+                            // Convert JSON array to tabular format if needed
+                            if (Array.isArray(data) && data.length > 0) {
+                                data = this.jsonToTable(data);
+                            }
+                        }
+                        
+                        this.uploadedData = {
+                            name: file.name,
+                            type: fileType,
+                            raw: data,
+                            columns: Object.keys(data[0] || {}),
+                            rows: data.length,
+                            preview: data.slice(0, 10) // Preview first 10 rows
+                        };
+                        
+                        // Auto-select features (all columns initially)
+                        this.features = [...this.uploadedData.columns];
+                        
+                    } catch (error) {
+                        alert('Error reading file: ' + error.message);
+                        console.error(error);
+                    }
+                },
+                
+                parseCSV(csvText) {
+                    const lines = csvText.split('\n').filter(line => line.trim());
+                    const headers = lines[0].split(',').map(h => h.trim());
+                    
+                    return lines.slice(1).map(line => {
+                        const values = line.split(',').map(v => v.trim());
+                        const row = {};
+                        headers.forEach((header, index) => {
+                            row[header] = values[index] || '';
+                        });
+                        return row;
+                    });
+                },
+                
+                jsonToTable(jsonArray) {
+                    if (!Array.isArray(jsonArray) || jsonArray.length === 0) {
+                        return [];
+                    }
+                    
+                    // Simple flattening for nested objects
+                    return jsonArray.map(item => {
+                        const flatItem = {};
+                        const flatten = (obj, prefix = '') => {
+                            for (const key in obj) {
+                                if (typeof obj[key] === 'object' && obj[key] !== null) {
+                                    flatten(obj[key], prefix + key + '_');
+                                } else {
+                                    flatItem[prefix + key] = obj[key];
+                                }
+                            }
+                        };
+                        flatten(item);
+                        return flatItem;
+                    });
+                },
+                
+                preprocessData() {
+                    if (!this.uploadedData || !this.targetColumn) {
+                        alert('Please upload data and select a target column');
+                        return;
+                    }
+                    
+                    if (this.features.length === 0) {
+                        alert('Please select at least one feature column');
+                        return;
+                    }
+                    
+                    // Simple preprocessing - convert to tensors
+                    try {
+                        const featuresArray = this.uploadedData.raw.map(row => 
+                            this.features.map(feature => parseFloat(row[feature]) || 0)
+                        );
+                        
+                        const labelsArray = this.uploadedData.raw.map(row => 
+                            parseFloat(row[this.targetColumn]) || 0
+                        );
+                        
+                        this.dataset = {
+                            features: tf.tensor2d(featuresArray),
+                            labels: tf.tensor1d(labelsArray)
+                        };
+                        
+                        alert('Data preprocessing completed! Ready for training.');
+                        
+                    } catch (error) {
+                        alert('Error in preprocessing: ' + error.message);
+                        console.error(error);
+                    }
+                },
+                
+                // Training Manager Methods
+                async startTraining() {
+                    if (!this.modelCompiled) {
+                        alert('Please compile the model first');
+                        return;
+                    }
+                    
+                    if (!this.dataset) {
+                        alert('Please load and preprocess data first');
+                        return;
+                    }
+                    
+                    this.isTraining = true;
+                    this.shouldStopTraining = false;
+                    this.trainingHistory = { loss: [], accuracy: [], val_loss: [], val_accuracy: [] };
+                    this.trainingLog = [];
+                    this.currentEpoch = 0;
+                    
+                    this.addLog('Starting model training...');
+                    
+                    try {
+                        await this.model.fit(this.dataset.features, this.dataset.labels, {
+                            epochs: this.trainingConfig.epochs,
+                            batchSize: this.trainingConfig.batchSize,
+                            validationSplit: this.trainingConfig.validationSplit,
+                            callbacks: {
+                                onEpochEnd: (epoch, logs) => {
+                                    this.currentEpoch = epoch + 1;
+                                    this.currentLoss = logs.loss;
+                                    this.currentAccuracy = logs.acc;
+                                    
+                                    // Update training history
+                                    this.trainingHistory.loss.push(logs.loss);
+                                    this.trainingHistory.accuracy.push(logs.acc);
+                                    if (logs.val_loss) {
+                                        this.trainingHistory.val_loss.push(logs.val_loss);
+                                        this.trainingHistory.val_accuracy.push(logs.val_acc);
+                                    }
+                                    
+                                    // Update charts
+                                    this.updateCharts();
+                                    
+                                    this.addLog(`Epoch ${this.currentEpoch}/${this.trainingConfig.epochs} - loss: ${logs.loss.toFixed(4)}, acc: ${logs.acc.toFixed(4)}`);
+                                    
+                                    // Check if training should stop
+                                    if (this.shouldStopTraining) {
+                                        this.model.stopTraining = true;
+                                        this.addLog('Training stopped by user');
+                                    }
+                                },
+                                onTrainEnd: () => {
+                                    this.isTraining = false;
+                                    this.trainedModel = this.model;
+                                    this.addLog('Training completed!');
+                                    this.activeTab = 3; // Switch to results tab
+                                }
+                            }
+                        });
+                        
+                    } catch (error) {
+                        this.isTraining = false;
+                        this.addLog('Training error: ' + error.message, 'error');
+                        console.error(error);
+                    }
+                },
+                
+                stopTraining() {
+                    this.shouldStopTraining = true;
+                    this.addLog('Stopping training...');
+                },
+                
+                addLog(message, type = 'info') {
+                    this.trainingLog.push({
+                        id: Date.now() + Math.random(),
+                        timestamp: new Date().toLocaleTimeString(),
+                        message: message,
+                        type: type
+                    });
+                    
+                    // Keep only last 50 log entries
+                    if (this.trainingLog.length > 50) {
+                        this.trainingLog = this.trainingLog.slice(-50);
+                    }
+                },
+                
+                updateCharts() {
+                    if (window.updateD3Charts) {
+                        window.updateD3Charts(this.trainingHistory);
+                    }
+                },
+                
+                // Results Methods
+                exportTrainedModel() {
+                    if (!this.trainedModel) {
+                        alert('No trained model available for export');
+                        return;
+                    }
+                    
+                    alert('Model exported successfully! In a real implementation, this would download the model files.');
+                },
+                
+                updateFinalCharts() {
+                    if (window.updateD3Charts) {
+                        window.updateD3Charts(this.trainingHistory);
+                    }
                 }
             };
         }
+
+        // D3.js Chart Functions
+        function createLossChart() {
+            const margin = { top: 20, right: 30, bottom: 30, left: 50 };
+            const width = 600 - margin.left - margin.right;
+            const height = 140 - margin.top - margin.bottom;
+            
+            const svg = d3.select('#lossChart')
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            return { svg, width, height, margin };
+        }
+
+        function createAccuracyChart() {
+            const margin = { top: 20, right: 30, bottom: 30, left: 50 };
+            const width = 600 - margin.left - margin.right;
+            const height = 140 - margin.top - margin.bottom;
+            
+            const svg = d3.select('#accuracyChart')
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left},${margin.top})`);
+            
+            return { svg, width, height, margin };
+        }
+
+        // Global function to update charts
+        window.updateD3Charts = function(trainingHistory) {
+            updateLossChart(trainingHistory);
+            updateAccuracyChart(trainingHistory);
+        };
+
+        function updateLossChart(history) {
+            const container = d3.select('#lossChart');
+            container.select('svg').remove();
+            
+            const { svg, width, height } = createLossChart();
+            
+            const data = history.loss.map((loss, epoch) => ({ epoch: epoch + 1, loss }));
+            const valData = history.val_loss.map((loss, epoch) => ({ epoch: epoch + 1, loss }));
+            
+            // Scales
+            const xScale = d3.scaleLinear()
+                .domain([1, d3.max(data, d => d.epoch) || 1])
+                .range([0, width]);
+                
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max([...data, ...valData], d => d.loss) || 1])
+                .range([height, 0]);
+            
+            // Lines
+            const line = d3.line()
+                .x(d => xScale(d.epoch))
+                .y(d => yScale(d.loss));
+            
+            // Draw training loss
+            if (data.length > 0) {
+                svg.append('path')
+                    .datum(data)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#dc3545')
+                    .attr('stroke-width', 1.5)
+                    .attr('d', line);
+            }
+            
+            // Draw validation loss
+            if (valData.length > 0) {
+                svg.append('path')
+                    .datum(valData)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#ff6b6b')
+                    .attr('stroke-width', 1.5)
+                    .attr('stroke-dasharray', '5,5')
+                    .attr('d', line);
+            }
+            
+            // Axes
+            const xAxis = d3.axisBottom(xScale).ticks(5);
+            const yAxis = d3.axisLeft(yScale).ticks(5);
+            
+            svg.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(xAxis);
+                
+            svg.append('g')
+                .call(yAxis);
+            
+            // Labels
+            svg.append('text')
+                .attr('x', width / 2)
+                .attr('y', -5)
+                .attr('text-anchor', 'middle')
+                .style('font-size', '12px')
+                .text('Loss Over Epochs');
+                
+            if (valData.length > 0) {
+                svg.append('text')
+                    .attr('x', width - 40)
+                    .attr('y', 15)
+                    .style('font-size', '10px')
+                    .style('fill', '#dc3545')
+                    .text('Train');
+                    
+                svg.append('text')
+                    .attr('x', width - 40)
+                    .attr('y', 25)
+                    .style('font-size', '10px')
+                    .style('fill', '#ff6b6b')
+                    .text('Val');
+            }
+        }
+
+        function updateAccuracyChart(history) {
+            const container = d3.select('#accuracyChart');
+            container.select('svg').remove();
+            
+            const { svg, width, height } = createAccuracyChart();
+            
+            const data = history.accuracy.map((acc, epoch) => ({ epoch: epoch + 1, accuracy: acc }));
+            const valData = history.val_accuracy.map((acc, epoch) => ({ epoch: epoch + 1, accuracy: acc }));
+            
+            // Scales
+            const xScale = d3.scaleLinear()
+                .domain([1, d3.max(data, d => d.epoch) || 1])
+                .range([0, width]);
+                
+            const yScale = d3.scaleLinear()
+                .domain([0, 1])
+                .range([height, 0]);
+            
+            // Lines
+            const line = d3.line()
+                .x(d => xScale(d.epoch))
+                .y(d => yScale(d.accuracy));
+            
+            // Draw training accuracy
+            if (data.length > 0) {
+                svg.append('path')
+                    .datum(data)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#28a745')
+                    .attr('stroke-width', 1.5)
+                    .attr('d', line);
+            }
+            
+            // Draw validation accuracy
+            if (valData.length > 0) {
+                svg.append('path')
+                    .datum(valData)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#51cf66')
+                    .attr('stroke-width', 1.5)
+                    .attr('stroke-dasharray', '5,5')
+                    .attr('d', line);
+            }
+            
+            // Axes
+            const xAxis = d3.axisBottom(xScale).ticks(5);
+            const yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(d => d3.format('.0%')(d));
+            
+            svg.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(xAxis);
+                
+            svg.append('g')
+                .call(yAxis);
+            
+            // Labels
+            svg.append('text')
+                .attr('x', width / 2)
+                .attr('y', -5)
+                .attr('text-anchor', 'middle')
+                .style('font-size', '12px')
+                .text('Accuracy Over Epochs');
+                
+            if (valData.length > 0) {
+                svg.append('text')
+                    .attr('x', width - 40)
+                    .attr('y', 15)
+                    .style('font-size', '10px')
+                    .style('fill', '#28a745')
+                    .text('Train');
+                    
+                svg.append('text')
+                    .attr('x', width - 40)
+                    .attr('y', 25)
+                    .style('font-size', '10px')
+                    .style('fill', '#51cf66')
+                    .text('Val');
+            }
+        }
+
+        // Initialize charts when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            createLossChart();
+            createAccuracyChart();
+        });
     </script>
 </body>
 </html>
